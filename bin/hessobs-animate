@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+"""
+Script to make a set of visplots for a full month animation
+"""
+
+import os
+import sys
+from astropy import time as t
+from astropy import units as u
+import numpy as np
+import visplot
+import argparse
+import logging
+import matplotlib.pyplot as plt
+
+# a nicer palette if you have it, via seaborn or the built-in
+# ggplot style
+try:
+    import seaborn
+    seaborn.set_palette(seaborn.color_palette("Paired", 20),
+                        n_colors=20)
+except:
+    plt.style.use("ggplot")
+
+logging.basicConfig(level=logging.DEBUG)
+
+
+parser = argparse.ArgumentParser(description='make monthly visplot animation')
+parser.add_argument('startdate', metavar='YYYY-MM-DD', type=str,
+                    help='date to start on', default='2015-08-31')
+parser.add_argument('target_names', metavar='TARGET', type=str,
+                    nargs='+',
+                    help='Target to plot (resolved name, or "rd/123h3m,-34d/")')
+parser.add_argument('-n', '--num-days', metavar='N', type=int,
+                    help='number of days in animation', default=30)
+parser.epilog = """Example:
+  python make_animation.py 2015-01-01 'Sgr A*' Crab 'PKS 2155-304'
+"""
+
+args = parser.parse_args()
+print(args)
+
+
+base = t.Time(args.startdate, scale="utc")
+dt = t.TimeDelta(1.0 * u.day)
+days = base + np.linspace(0, args.num_days, args.num_days) * dt
+target_names, target_coords = visplot.resolve_target_coordinates(
+    args.target_names)
+
+print(target_names)
+
+for day in days:
+
+    date_string = day.datetime.strftime("%Y-%m-%d")
+    visplot.visplot(target_names, target_coords, date=date_string,
+                    output="/tmp/{}.png".format(date_string))

@@ -1,0 +1,301 @@
+#!/usr/bin/env python
+"""
+visplot.py
+
+Visibility Plotter using AstroPy libraries (and some others until
+AstroPy supports moon ephemerides)
+
+Author: Karl Kosack <karl.kosack@cea.fr>
+
+Get detailed usage info by running:
+
+  python visplot.py --help
+
+"""
+
+try:
+    import ephem
+except Exception as e:
+    print("PyEphem is required to determine the Moon location")
+    raise e
+
+from astropy import units as u
+from astropy import coordinates as c
+from astropy import time as t
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.dates import date2num, HourLocator, DayLocator, DateFormatter
+from matplotlib import patheffects
+from optparse import OptionParser
+import sys
+import logging
+
+# fetch updated IERS table if it's not already stored locally (only
+# done once)
+from astropy.utils.data import download_file
+from astropy.utils import iers
+iers.IERS.iers_table = iers.IERS_A.open(download_file(iers.IERS_A_URL,
+                                                      cache=True))
+
+
+from datetime import datetime
+
+SITES = {'HESS': c.EarthLocation(lon=16.3 * u.deg, lat=-23.26 * u.deg,
+                                 height=1800 * u.m),
+         'VERITAS': c.EarthLocation(lon="110d57m07s", lat="31d30m40s",
+                                    height=1268 * u.m),
+         'MAGIC': c.EarthLocation(lon=18.8900 * u.deg, lat=28.7619 * u.deg,
+                                  height=2200 * u.m),
+         }
+
+
+def moonloc(times, site):
+    """ returns moonrise, moonset """
+    global SITES
+    location = SITES[site]
+
+    moon = ephem.Moon()
+    obs = ephem.Observer()
+    obs.lon = "{}".format(location.longitude.deg)
+    obs.lat = "{}".format(location.latitude.deg)
+    obs.elev = location.height.to("m").value
+
+    moon_alts = np.zeros_like(times)
+    moon_azs = np.zeros_like(times)
+
+    for ii, tt in enumerate(times):
+        obs.date = ephem.Date(tt.datetime)
+        moon.compute(obs)
+        moon_alts[ii] = moon.alt * 180. / np.pi
+        moon_azs[ii] = moon.az * 180. / np.pi
+
+    return moon_alts * u.deg, moon_azs * u.deg
+
+
+def plot_windows(times, site, grid=True):
+    """
+    Keyword Arguments:
+    date --
+    """
+    global SITES
+    ASTRONOMICAL_TWILIGHT_ANGLE = -18 * u.deg
+    CIVIL_TWILIGHT_ANGLE = -12 * u.deg
+    MOON_TWILIGHT_ANGLE = -0.5 * u.deg
+
+    fdates = np.array([date2num(x.datetime) for x in times])
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.subplot(1, 1, 1)
+    ax.xaxis_date()
+    ax.xaxis.set_minor_formatter(DateFormatter("%Hh"))
+    ax.xaxis.set_minor_locator(HourLocator(interval=2))
+    ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d     "))
+    ax.xaxis.set_major_locator(DayLocator())
+    ax.tick_params(pad=20)
+
+    horizframe = c.AltAz(obstime=times, location=SITES[site])
+    sun = c.get_sun(times).transform_to(horizframe)
+
+    plt.fill_between(fdates, 0, 90, sun.alt < -0 * u.deg,
+                     color='0.5', zorder=0)
+
+    # nautical twilight
+    plt.fill_between(fdates, 0, 90, sun.alt < CIVIL_TWILIGHT_ANGLE,
+                     color='0.3', zorder=0)
+
+    # astronomical twilight
+    plt.fill_between(fdates, 0, 90, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE,
+                     color='k', zorder=0)
+
+    # plot the moon window. Note that we don't use -18 degrees
+    moonalt, moonaz = moonloc(times, site)
+    moonup = (moonalt > MOON_TWILIGHT_ANGLE) \
+        & (sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE)
+
+    plt.fill_between(fdates, 0, 90, moonup,
+                     color='sienna', zorder=0)
+
+    plt.plot([], [], color='sienna', linewidth=10, label="Moon")
+    plt.plot([], [], color='0.5', linewidth=10, label="Twilight")
+    plt.plot([], [], color='k', linewidth=10, label="Darkness")
+
+    fig.autofmt_xdate(rotation=0, ha='center')
+    plt.ylabel("Altitude (deg)")
+    plt.ylim(15, 90)
+    if grid:
+        plt.grid(color="0.8", which="minor")
+        plt.grid(color="0.8", which="major")
+        plt.grid(color="0.8", which="major", lw=4, axis="x")
+
+    return fdates, moonalt
+
+
+def plot_altaz(times, position, label, site):
+    global SITES
+    horizframe = c.AltAz(obstime=times, location=SITES[site])
+    altaz = position.transform_to(horizframe)
+    fdates = np.array([date2num(x.datetime) for x in times])
+    plt.plot(fdates, altaz.alt.deg, lw=3, label=label,
+             path_effects=[patheffects.Stroke(linewidth=4, foreground='white'),
+                           patheffects.Normal()])
+
+
+def resolve_target_coordinates(target_names):
+    """takes a list of target name strings and returns reformatted strings
+    and coordinates (names, coords)
+    """
+    names = []
+    coords = []
+
+    logging.debug("Resolving target coordinates...")
+
+    for name in target_names:
+        tag = name
+        if name.startswith("rd/"):
+            position_str = name[3:].replace(",", " ")
+            if position_str.find("/") > 0:
+                # try to extract a name tag if it is there
+                position_str, tag = position_str.split("/")
+            position = c.SkyCoord(position_str, frame=c.ICRS)
+        elif name.startswith("lb/"):
+            position_str = name[3:].replace(",", " ")
+            if position_str.find("/") > 0:
+                # try to extract a name tag if it is there
+                position_str, tag = position_str.split("/")
+            position = c.SkyCoord(position_str, frame=c.Galactic)
+        else:
+            position = c.SkyCoord.from_name(name)
+
+        names.append(tag)
+        coords.append(position)
+
+    return names, coords
+
+
+def visplot(target_names, target_coords, site="HESS", hrange=10,
+            centerhour=None, date=None, output=None, grid=True):
+    """ show a visiblity plot with targets overlaid """
+
+    global SITES
+
+    dt = np.linspace(-int(hrange), int(hrange),
+                     50 * int(hrange)) * u.hour
+    now = datetime.utcnow()
+
+    if centerhour is not None:
+        centerhour = int(centerhour)
+    else:
+        centerhour = 24 - int(round(SITES[site].longitude.hour))
+
+    centerdate = t.Time(datetime(now.year, now.month, now.day,
+                                 centerhour), scale='utc')
+
+    if date is not None:
+        logging.debug("setting date")
+        cc = t.Time(date, scale='utc').datetime
+        centerdate = t.Time(datetime(cc.year, cc.month, cc.day, centerhour),
+                            scale='utc')
+
+    # first plot the visibility windows
+    times = centerdate + dt
+    fd, malt = plot_windows(times, site, grid=grid)
+
+    for name, coord in zip(target_names, target_coords):
+        plot_altaz(times, coord, name, site)
+
+    plt.title("Visibility at {0}".format(site))
+    plt.xlabel("Time ({})".format(times.scale))
+    leg = plt.legend(loc="best", frameon=False)
+
+    for tt in leg.texts:
+        tt.set_path_effects([patheffects.Stroke(linewidth=3, foreground="w"),
+                             patheffects.Normal()])
+
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(output)
+        logging.info("Wrote to: '{0}'".format(output))
+
+    return centerdate, times, fd, malt
+
+
+if __name__ == '__main__':
+
+    parser = OptionParser(prog="visplot")
+    parser.set_usage(
+        """visplot [options] [SourceName1 SourceName2 ...]
+
+Plots the visibility of the listed objects tonight (or any other day).
+
+The Name can either be a source name resolvable by Simbad, or if prefixed
+by rd/ or lb/,  a set of RA/Dec or Galactic coordinates in the format
+expected by astropy SkyCoords, separated by a comma. E.g. rd/14h23m27s,-29d
+or rd/280.0d,-45.6d You can add a tag name too: rd/14h23m,-29d/MySource
+
+Author: Karl Kosack <karl.kosack@cea.fr>
+based on examples in the AstroPy package
+"""
+    )
+    parser.add_option("-d", "--date", dest="date",
+                      default=None, help="date to use as center of plot. " +
+                      "If not specified, tonight is used")
+    parser.add_option("-r", "--range", dest="range",
+                      default=10,
+                      help="number of hours (+/-) from midnight of the " +
+                      "specified date to plot")
+
+    parser.add_option("-s", "--site", dest="site",
+                      default="HESS",
+                      choices=list(SITES.keys()),
+                      help=("Observation site ({0})")
+                      .format(",".join(list(SITES.keys()))))
+
+    parser.add_option("-c", "--center", dest="centerhour",
+                      default=None,
+                      help="Center plot on this hour (integer)." +
+                      " If not specified, automatically centered on " +
+                      "middle of night at the site")
+
+    parser.add_option("-o", "--output", dest="output",
+                      default=None,
+                      help="Output file to write to (any format" +
+                      " recognized by matplotlib). If not specified, " +
+                      "an interactive viewer will be displayed from " +
+                      "which the plot can be manipulated and saved.")
+
+    parser.add_option("-q", "--quiet", dest="quiet",
+                      action="store_true",
+                      help="less verbose output")
+
+    parser.add_option("-x", "--xkcd", dest="xkcd", action="store_true")
+
+    logging.basicConfig(level=logging.INFO)
+
+    opts, args = parser.parse_args(sys.argv)
+    args.pop(0)
+    grid = True
+
+    if (opts.xkcd):
+        plt.xkcd()
+        grid = False
+    else:
+        # a nicer palette if you have it, via seaborn or the built-in
+        # ggplot style
+        try:
+            import seaborn
+            seaborn.set_palette(seaborn.color_palette("Paired", 20),
+                                n_colors=20)
+        except:
+            plt.style.use("ggplot")
+
+    target_names, target_coords = resolve_target_coordinates(args)
+
+    if not opts.quiet:
+        for nn, cc in zip(target_names, target_coords):
+            print("{0:15s} : ".format(nn), cc.to_string(style='hmsdms'))
+
+    cd, tt, fd, malt = visplot(target_names, target_coords,
+                               site=opts.site, hrange=opts.range,
+                               centerhour=opts.centerhour, date=opts.date,
+                               output=opts.output, grid=grid)
