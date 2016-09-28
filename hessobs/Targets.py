@@ -1,6 +1,6 @@
 from __future__ import with_statement, print_function, absolute_import
-"""Targets: Tools to work with target lists
-========================================
+"""
+Tools to work with target lists
 
 Targets are defined as dictionaries containing a set of scheduling
 parameters. The parameters are defined by the columns in the

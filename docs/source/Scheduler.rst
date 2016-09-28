@@ -4,7 +4,8 @@ The scheduler module has classes to help filling multi-subarray
 schedules (each one represented by a Darkness object)
 
 
-.. inheritance-diagram::   Scheduler
+.. inheritance-diagram::   hessobs.Scheduler
 
-.. automodule:: Scheduler
+.. automodule:: hessobs.Scheduler
    :members:
+

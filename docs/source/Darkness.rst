@@ -1,4 +1,7 @@
-.. automodule:: Darkness
+Single-Telescope Scheduling
+===========================
+
+.. automodule:: hessobs.Darkness
    :members:
       
 

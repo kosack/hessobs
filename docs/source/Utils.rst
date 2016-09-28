@@ -1,2 +1,5 @@
-.. automodule:: Utils
+Utility Functions
+=================
+
+.. automodule:: hessobs.Utils
    :members: 
