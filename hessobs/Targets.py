@@ -8,7 +8,7 @@ parameters. The parameters are defined by the columns in the
 
 Normally, one loads targets using :func:`Targets.load_targets_from_db`,
 or by creating a new target by hand using :func:`Targets.new_target`
-or :func:`Targets.new_target_from_name`. Important parameters to set
+or :func:`Targets._new_target_from_name`. Important parameters to set
 are:
 
     * RA_2000
@@ -45,11 +45,18 @@ class Target(dict):
     def __init__(self, **kw):
         dict.__init__(self, kw)
         self.__dict__ = self
+        _set_target_defaults(self)
 
     def __str__(self):
         return "--------\n" +\
             "\n".join(["{0:24s} : {1}".format(key, self.__dict__[key])
                        for key in sorted(self.__dict__)]) + "\n"
+
+    @classmethod
+    def from_name(cls, name, hours=10):
+        """ Create a new target with all the required fields,
+        filling in the RA and DEC using a simbad query by object name."""
+        _new_target_from_name(name, hours)
 
 
 def _query_database(query, dbconfig="proposals", db="HESS_Proposals"):
@@ -77,21 +84,7 @@ def _query_database(query, dbconfig="proposals", db="HESS_Proposals"):
         raise err
 
 
-def new_target(**kwargs):
-    """
-    helper function to quickly create a new target by hand
-    (e.g. not using the database
-
-    - kwargs :: target keywords and values. If any required info is
-      missing, it will be automatically filled in by defaults from
-      Config.py using set_target_defaults()
-    """
-    targ = Target(**kwargs)
-    set_target_defaults(targ)
-    return targ
-
-
-def new_target_from_name(name, hours=10):
+def _new_target_from_name(name, hours=10):
     """
     Look up name on Simbad and return a new target, ready to have
     other fields filled in.
@@ -112,7 +105,7 @@ def new_target_from_name(name, hours=10):
     return target
 
 
-def set_target_defaults(targetdict):
+def _set_target_defaults(targetdict):
     """
     Adds keys for all default values if they don't exist to a
     target dictionary.  Also cleans up bad entries.
@@ -214,7 +207,7 @@ def load_targets_from_db(where="Hours_Accepted>0",
         # normalize all targets:
         if normalize:
             for targ in targets:
-                set_target_defaults(targ)
+                _set_target_defaults(targ)
 
     except MySQLdb.Error as err:
         print(err)

@@ -1,8 +1,3 @@
-"""
-Utils: functions to do some useful things with schedules
-=========================================================
-"""
-
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -21,8 +16,8 @@ def plot_available_time_vs_zmax(dark, target, **kwargs):
 
     usage:
 
-    >>> t1 = Targets.new_target_from_name( "Crab" )
-    >>> t2 = Targets.new_target_from_name( "Sgr A*" )
+    >>> t1 = Targets._new_target_from_name( "Crab" )
+    >>> t2 = Targets._new_target_from_name( "Sgr A*" )
     >>> plot_available_time_vs_zmax( dark, t1 )
     >>> plot_available_time_vs_zmax( dark, t2 )
     >>> legend(loc="best")

@@ -1,24 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-"""Darkness: Long-Term scheduling for a single telescope array
-===========================================================
-
-The :class:`Darkness` object defines a 2D (day vs hour) map of the
-available dark time at the telescope site over a year. It allows
-targets to be scheduled (filled) into the available time slots, and
-handles a set of heuristics for doing so in an optimal manner, while
-staying within the given proposal constraints.
-
-
-Darkness requires a pre-generated map of free dark time per day, which
-can be generated for a specific year from the HESS Astro database
-using the following script (which requires the
-``$HESSROOT/autoscheduler/bin/Darkness`` program to be accessable and
-a database connection to the HESS db):
-
-::
-
-  darknesstable.pl 2015 > darkness.dat
+"""
 
 """
 
@@ -45,7 +27,7 @@ from functools import lru_cache
 import logging
 
 from . import Config
-from .Targets import set_target_defaults, target_list_to_dict
+from .Targets import _set_target_defaults, target_list_to_dict
 from . import Coordinates
 
 __all__ = ['Darkness', 'load_dark', 'save_dark']
@@ -96,39 +78,6 @@ class Darkness(object):
         Identifier for this schedule plane (e.g. "Mono"),
         which will be used in plot titles, etc.
 
-    Usage
-    -----
-
-    - :func:`fillTarget` is used to insert targets into the schedule
-
-    - the target info must be given as a dictionary of entries from
-      the `Observation_Proposals` database table, giving all necessary
-      information about the target, the preferences of the proposers,
-      and the time allocated by the OC. The :mod:`Targets` module provides
-      methods to read the database and extract this information
-
-    Scheduling Heuristics:
-    ----------------------
-
-    The schedule takes into account the range of allowed zenith angles
-    in the proposal. It uses the zenith information to find an
-    acceptable observation window.
-
-    There are two methods it uses to fill the target (set globally by
-    :data:`Config.DEFAULT_FILL_METHOD`, or for each object by
-    the `Scheduling_Preference` field in the :class:`Targets.Target`
-
-    - **zenith** mode perfers small zenith angles, by scheduling in
-      increasing stripes of zenith angle until the maximum is reached
-      (so the observations may be spread out in time over the full
-      year, but are made at small zenith)
-
-      this mode uses the "Scheduling_Zenith_Step" parameter to
-      choose how often to step through the zenith range
-
-    - **time** mode schedules the objects as fast as possible, allowing
-      the full range of zenith angles, so it is good for observations
-      you want to do faster, but perhaps at less optimal zeniths.
 
     """
 
@@ -942,7 +891,7 @@ class Darkness(object):
             merge targets that are in the same FOV
         """
 
-        set_target_defaults(targetinfo)  # sanitize just in case it
+        _set_target_defaults(targetinfo)  # sanitize just in case it
         # wasn't done before
         targetinfo['FILL_ORDER'] = self._cur_fill_order
         self._cur_fill_order += 1

@@ -274,9 +274,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.epilog = "\n".join(
         ['examples:',
-         '    obs-summary.py year 2015',
-         '    obs-summary.py period P2015-02',
-         '    obs-summary.py runs 102695 104843']
+         '    hessobs-summary.py year 2015',
+         '    hessobs-summary.py period P2015-02',
+         '    hessobs-summary.py runs 102695 104843']
     )
     parser.formatter_class = argparse.RawDescriptionHelpFormatter
     parser.description = "Generate list of observations and related " \
