@@ -137,6 +137,15 @@ def check_dates(targ):
 
 if __name__ == '__main__':
 
+    if len(sys.argv) < 2:
+        print("Verifies the parameters of a proposal and generates a resport to")
+        print("send to the proposer.")
+        print("")
+        print("usage: hessobs-verifyprop <PROPID>")
+        print("   PROPID should be in form YEAR-SEQNO-REVISION")
+        print("   example: hessobs-verifyprop 2015-001-0")
+        sys.exit(1)
+
     prop = sys.argv.pop()
     year, seq, rev = prop.split("-")
 

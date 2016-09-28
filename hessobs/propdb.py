@@ -2,7 +2,7 @@ from __future__ import print_function
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
-import hessdb
+from .hessdb import read_dbtoolsrc
 
 import logging
 logging.basicConfig()
@@ -29,7 +29,7 @@ class Proposal(Base):
 def get_dbstring_from_config():
     """
     """
-    rc = hessdb.read_dbtoolsrc("proposals")
+    rc = read_dbtoolsrc("proposals")
     return "mysql+pymysql://{user}:{password}@{host}:{port}/{db}"\
         .format(user=rc['user'], password=rc['password'], host=rc['host'],
                 port=int(rc['port']), db=rc['database'])
