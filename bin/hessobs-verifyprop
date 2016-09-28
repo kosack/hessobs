@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-import configparser
-from astropy.coordinates import SkyCoord
-from astropy.coordinates.name_resolve import NameResolveError
-from astropy import units as u
-from hessobs import Targets
-from hessobs import Coordinates
 import sys
 import textwrap
+
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.coordinates.name_resolve import NameResolveError
+from hessobs import Coordinates
+from hessobs import Targets
 
 
 def print_header(targ):

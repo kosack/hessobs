@@ -19,21 +19,20 @@ except Exception as e:
     print("PyEphem is required to determine the Moon location")
     raise e
 
-from astropy import units as u
+import logging
+import sys
+from optparse import OptionParser
+
+import numpy as np
 from astropy import coordinates as c
 from astropy import time as t
-import numpy as np
+from astropy import units as u
+from astropy.utils import iers
+from astropy.utils.data import download_file
+from matplotlib import patheffects
 from matplotlib import pyplot as plt
 from matplotlib.dates import date2num, HourLocator, DayLocator, DateFormatter
-from matplotlib import patheffects
-from optparse import OptionParser
-import sys
-import logging
 
-# fetch updated IERS table if it's not already stored locally (only
-# done once)
-from astropy.utils.data import download_file
-from astropy.utils import iers
 iers.IERS.iers_table = iers.IERS_A.open(download_file(iers.IERS_A_URL,
                                                       cache=True))
 

@@ -3,15 +3,14 @@
 Script to make a set of visplots for a full month animation
 """
 
-import os
-import sys
-from astropy import time as t
-from astropy import units as u
-import numpy as np
-import visplot
 import argparse
 import logging
+
 import matplotlib.pyplot as plt
+import numpy as np
+import visplot
+from astropy import time as t
+from astropy import units as u
 
 # a nicer palette if you have it, via seaborn or the built-in
 # ggplot style
@@ -34,7 +33,7 @@ parser.add_argument('target_names', metavar='TARGET', type=str,
 parser.add_argument('-n', '--num-days', metavar='N', type=int,
                     help='number of days in animation', default=30)
 parser.epilog = """Example:
-  python make_animation.py 2015-01-01 'Sgr A*' Crab 'PKS 2155-304'
+  hessobs-animate 2015-01-01 'Sgr A*' 'Crab' 'PKS 2155-304'
 """
 
 args = parser.parse_args()

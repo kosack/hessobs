@@ -15,18 +15,19 @@ usage:  python obs-summary.py <START_RUN> <END_RUN>
 """
 
 from __future__ import with_statement, print_function
-from collections import defaultdict
-import numpy as np
+
 import argparse
-from hessobs import hessdb
-from astropy import coordinates as c
-from astropy import units as u
-import pandas as pd
 import logging
+from collections import defaultdict
 from itertools import chain
 
-from matplotlib.patches import Ellipse
+import numpy as np
+import pandas as pd
+from astropy import coordinates as c
+from astropy import units as u
+from hessobs import hessdb
 from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
 
 try:
     import seaborn              # nicer plot defaults

@@ -6,17 +6,17 @@ and insert the proposal into the database
 Author: Karl Kosack
 """
 from __future__ import print_function
-import configobj  # for parsing the details form
-import sys
-import re
+
 import os
-from validate import ValidateError, Validator
-import dateutil.parser
+import re
+import sys
 from optparse import OptionParser
-from numpy import asarray
 
+import configobj  # for parsing the details form
+import dateutil.parser
 from hessobs import propdb
-
+from numpy import asarray
+from validate import ValidateError, Validator
 
 EMAIL_RE = re.compile('[\w.-]+@[\w-]+(?:\.\w+)')
 
