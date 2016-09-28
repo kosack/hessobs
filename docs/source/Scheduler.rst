@@ -1,7 +1,7 @@
 Multi-Subarray Schedules
 ==============================================
 The scheduler module has classes to help filling multi-subarray
-schedules (each one represented by a Darkness object)
+schedules (each one represented by a `hessobs.Darkness.Darkness` object)
 
 
 .. inheritance-diagram::   hessobs.Scheduler

@@ -93,7 +93,7 @@ class HESSIIScheduler(Scheduler):
 
     """This class inherits all methods from :class:`Scheduler` and
     implements a HESS-II style split-subarray schedule. Internally it
-    constructs three Darkness objects (single-subarray schedules for
+    constructs three `hessobs.darkness.Darkness` objects (single-subarray schedules for
     Mono, Stereo, and Hybrid subarrays), and manages the scheduling of
     a mixed set of targets into all three at once.
 

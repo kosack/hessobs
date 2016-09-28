@@ -17,9 +17,9 @@ Generally scheduling proceeds as follows:
 
 """
 
-from .Darkness import *
-from .Targets import *
-from .Coordinates import *
-from .Utils import *
-from .Scheduler import *
+from .darkness import *
+from .targets import *
+from .coordinates import *
+from .utils import *
+from .scheduler import *
 

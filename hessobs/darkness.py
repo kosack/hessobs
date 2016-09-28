@@ -26,9 +26,9 @@ import colorama  # for colorized output
 from functools import lru_cache
 import logging
 
-from . import Config
-from .Targets import _set_target_defaults, target_list_to_dict
-from . import Coordinates
+from . import config
+from .targets import _set_target_defaults, target_list_to_dict
+from . import coordinates
 
 __all__ = ['Darkness', 'load_dark', 'save_dark']
 colorama.init()
@@ -45,7 +45,7 @@ def transit_ra(jd, utctime):
     """
 
     fulljd = jd + utctime / 24.0
-    ra, dec = Coordinates.altaz_to_radec(90.0 - 1e-50, 0.0, fulljd)
+    ra, dec = coordinates.altaz_to_radec(90.0 - 1e-50, 0.0, fulljd)
     return ra
 
 
@@ -88,8 +88,8 @@ class Darkness(object):
 
     def __init__(self, darkness_filename,
                  startdate=datetime.datetime(2011, 0o1, 21),
-                 binsperhour=Config.BINS_PER_HOUR,
-                 efficiencies=Config.DEFAULT_MONTH_EFFICIENCIES,
+                 binsperhour=config.BINS_PER_HOUR,
+                 efficiencies=config.DEFAULT_MONTH_EFFICIENCIES,
                  name="dark"):
 
         self._name = name
@@ -1398,7 +1398,7 @@ class Darkness(object):
 
         Parameters
         ----------
-        dark: hessobs.Darkness.Darkness
+        dark: hessobs.darkness.Darkness
             other schedule to compare with
         """
 
@@ -1690,7 +1690,7 @@ class Darkness(object):
 
             tra = targ['RA_2000'] * 180.0 / 12.0
             tdec = targ['Dec_2000']
-            dist = Coordinates.ang_sep_deg(ra, dec, tra, tdec)
+            dist = coordinates.ang_sep_deg(ra, dec, tra, tdec)
 
             if dist < radius_deg:  # and start == tstart:
                 close_targets.append(targ['INDEX'])
@@ -1700,7 +1700,7 @@ class Darkness(object):
     @lru_cache()
     def _generateZenithAngleMap(self, ra, dec):
         dd, uu = self.date_time_map
-        return 90.0 - Coordinates.radec_to_altaz(ra, dec,
+        return 90.0 - coordinates.radec_to_altaz(ra, dec,
                                                  dd + uu / 24.0)[0].transpose()
 
     def zenithRangeForTarget(self, target_id):

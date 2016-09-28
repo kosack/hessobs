@@ -5,8 +5,8 @@ import textwrap
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.coordinates.name_resolve import NameResolveError
-from hessobs import Coordinates
-from hessobs import Targets
+from hessobs import coordinates
+from hessobs import targets
 
 
 def print_header(targ):
@@ -66,7 +66,7 @@ def check_pos(targ):
 
 #        name = name.strip()
         pos = SkyCoord.from_name(name)
-        delta = Coordinates.ang_sep_deg(pos.ra.degree,
+        delta = coordinates.ang_sep_deg(pos.ra.degree,
                                         pos.dec.degree,
                                         proppos.ra.degree,
                                         proppos.dec.degree)
@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     where = "Year={0} AND Seqno={1} AND Revision={2}".format(year, seq, rev)
 
-    targets = Targets.load_targets_from_db(where=where,
+    targets = targets.load_targets_from_db(where=where,
                                            fallbackfile=None,
                                            normalize=False)
 

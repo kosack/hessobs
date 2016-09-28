@@ -2,7 +2,7 @@ from __future__ import with_statement, print_function, absolute_import
 
 from numpy import sin, cos, tan, arctan2, arcsin
 from numpy import mod, radians, degrees, array, sqrt
-from . import Config
+from . import config
 from math import pi
 
 """
@@ -38,7 +38,7 @@ def mjd_to_jd(jd):
 def hourangle_from_ra(ra_hours, jd):
     """ returns hour angle in radians """
 
-    lon = -Config.TELESCOPE_LONGITIUDE_DEG * pi / 180.0
+    lon = -config.TELESCOPE_LONGITIUDE_DEG * pi / 180.0
 
     return jd_to_gmst_angle(jd) - lon - ra_hours * pi / 12.0
 
@@ -47,7 +47,7 @@ def ra_from_hourangle(hourangle_rad, jd):
     """
     return Right accensions in hours
     """
-    lon = -Config.TELESCOPE_LONGITIUDE_DEG * pi / 180.0
+    lon = -config.TELESCOPE_LONGITIUDE_DEG * pi / 180.0
 
     return jd_to_gmst_angle(jd) - lon - hourangle_rad
 
@@ -63,7 +63,7 @@ def jd_to_gmst_angle(jd):
 
 def radec_to_altaz(ra_hours, dec_deg, jd):
     """ returns alt,az in degrees """
-    lat = -Config.TELESCOPE_LATITUDE_DEG * pi / 180.
+    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.
     ha = hourangle_from_ra(ra_hours, jd)
     cosha = cos(ha)
     dec = (dec_deg * pi / 180.)
@@ -80,7 +80,7 @@ def radec_to_altaz(ra_hours, dec_deg, jd):
 def altaz_to_radec(alt_deg, az_deg, jd):
     """ returns ra_hours, dec_deg """
 
-    lat = -Config.TELESCOPE_LATITUDE_DEG * pi / 180.
+    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.
 
     az = -az_deg * pi / 180.
     alt = -alt_deg * pi / 180.

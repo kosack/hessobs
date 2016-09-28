@@ -31,7 +31,7 @@ except:
     import pymysql as MySQLdb
 import os
 import pickle
-from . import Config
+from . import config
 import numpy.random
 from numpy import array
 import numpy as np
@@ -111,9 +111,9 @@ def _set_target_defaults(targetdict):
     target dictionary.  Also cleans up bad entries.
     """
 
-    for attrib in list(Config.DEFAULT_TARGET_ATTRIBS.keys()):
+    for attrib in list(config.DEFAULT_TARGET_ATTRIBS.keys()):
         if attrib not in targetdict or targetdict[attrib] is None:
-            targetdict[attrib] = Config.DEFAULT_TARGET_ATTRIBS[attrib]
+            targetdict[attrib] = config.DEFAULT_TARGET_ATTRIBS[attrib]
 
 
 def save_targets(targets, filename="targets.dat"):
@@ -246,7 +246,7 @@ def stochastically_optimized_schedule(darkfile, targets, iterations=50):
     efficiencies per trial
     """
 
-    from .Darkness import Darkness
+    from .darkness import Darkness
     
     maxscore = -1e100
     besttargs = targets
