@@ -1574,7 +1574,6 @@ class Darkness(object):
         clicked
         """
         target_id = self._getTargetIndexForPosition(event.xdata, event.ydata)
-        print("DEBUG: tid=", target_id)
         name = ""
         if (target_id == Darkness.UNFILLED):
             name = "FREE DARKTIME"
@@ -1595,8 +1594,10 @@ class Darkness(object):
                            fontweight='bold', rotation=self.label_angle)
             txt.set_path_effects([PathEffects.withStroke(linewidth=3,
                                                          foreground="w")])
+            plt.gcf().canvas.draw()
         else:
             print(self.getTarget(target_id))
+
 
     def on_save_clicked(self, event):
         print(event)
