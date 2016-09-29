@@ -36,6 +36,7 @@ import numpy.random
 from numpy import array
 import numpy as np
 from operator import itemgetter
+from .hessdb import read_dbtoolsrc, query_database
 
 
 class Target(dict):
@@ -59,29 +60,8 @@ class Target(dict):
         _new_target_from_name(name, hours)
 
 
-def _query_database(query, dbconfig="proposals", db="HESS_Proposals"):
-    """
-
-    """
-
-    dbtoolsrc = read_dbtoolsrc(dbconfig)
-
-    try:
-        print("Initiating DB connection: ", dbtoolsrc[
-              'user'], "on", dbtoolsrc['host'])
-        db = MySQLdb.connect(user=dbtoolsrc['user'],
-                             host=dbtoolsrc['host'],
-                             port=int(dbtoolsrc['port']),
-                             passwd=dbtoolsrc['password'],
-                             db=db)
-
-        cursor = db.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(query)
-        return cursor.fetchall()
-
-    except MySQLdb.Error as err:
-        print(("Database connection error: {0}".format(err.args[1])))
-        raise err
+def _do_proposal_query(query, dbconfig="proposals", db="HESS_Proposals"):
+    return query_database(query, dbconfig, db)
 
 
 def _new_target_from_name(name, hours=10):
@@ -145,7 +125,7 @@ def copy_target_between_sets(source_setnum, dest_setnum, target_name,
     query = """ SELECT * FROM Observation_Proposals WHERE
     SetNum={set1} and Target_Name like '{targ}' """
 
-    results = _query_database(
+    results = _do_proposal_query(
         query.format(set1=source_setnum, targ=target_name))
 
     print(results)
@@ -167,7 +147,7 @@ def copy_target_between_sets(source_setnum, dest_setnum, target_name,
 
         print(sql)
 
-        _query_database(sql.format(colnames=colnames, vals=vals))
+        _do_proposal_query(sql.format(colnames=colnames, vals=vals))
 
 
 def load_targets_from_db(where="Hours_Accepted>0",
@@ -194,7 +174,8 @@ def load_targets_from_db(where="Hours_Accepted>0",
         targets = []
         fullwhere = "(" + where + ")"
 
-        results = _query_database(query.format(where=fullwhere, order=order))
+        results = _do_proposal_query(
+            query.format(where=fullwhere, order=order))
 
         for row in results:
             if 'Working_Group_Rank' not in row:
@@ -219,19 +200,6 @@ def load_targets_from_db(where="Hours_Accepted>0",
     return targets
 
 
-def read_dbtoolsrc(section, fallback_section="hess"):
-    """ returns a dict for the given dbtoolsrc section """
-
-    parser = configparser.SafeConfigParser()
-    homedir = os.environ['HOME']
-    parser.read("{0}/.dbtoolsrc".format(homedir))
-
-    if (parser.has_section(section)):
-        return dict(parser.items(section))
-    else:
-        return dict(parser.items(fallback_section))
-
-
 def mutate(arr):
     r = numpy.random.randint(1, len(arr))
     return numpy.append(arr[r - 1:-1], arr[0:r])
@@ -247,7 +215,7 @@ def stochastically_optimized_schedule(darkfile, targets, iterations=50):
     """
 
     from .darkness import Darkness
-    
+
     maxscore = -1e100
     besttargs = targets
 

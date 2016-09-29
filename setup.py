@@ -11,7 +11,8 @@ setup(name='hessobs',
       install_requires=[
           'astropy',
           'pymysql',
-          'ephem'
+          'ephem',
+          'pandas'
       ],
       scripts=[
           'bin/hessobs-animate',
