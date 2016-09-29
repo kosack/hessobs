@@ -92,7 +92,7 @@ def _load_target_map_from_db():
     query = ('SELECT Name,TargetGroup FROM AutoSched_Target AS T '
              'LEFT JOIN AutoSched_Target_Set AS S ON T.SetNum=S.SetNum;')
     
-    results = hessdb.query_database(query, "hess", "HESS_AutoSched")
+    results = hessdb.execute(query, "hess", "HESS_AutoSched")
 
     for row in results:
         group = row['TargetGroup']
@@ -203,7 +203,7 @@ def get_observation_run_info(firstrun, lastrun):
       AND S.RunNumber<={1:d}
       AND S.RunType LIKE '%ObservationRun';
     """
-    oresults = hessdb.query_database(query.format(firstrun, lastrun),
+    oresults = hessdb.execute(query.format(firstrun, lastrun),
                                      "hess", "HESS_History")
     runs = []
     duration = dict()
@@ -342,7 +342,7 @@ if __name__ == '__main__':
     """.format(",".join([str(x) for x in runs]),
                ",".join(["'" + x + "'" for x in required_parameters]))
 
-    results = hessdb.query_database(query, "hess", "HESS_History")
+    results = hessdb.execute(query, "hess", "HESS_History")
 
     # ============================================================
     # structure the results it into a dictionary by run number:
