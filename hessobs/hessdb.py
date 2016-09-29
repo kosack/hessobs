@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_dbtoolsrc(section, fallback_section="hess"):
-    """ returns a dict for the given dbtoolsrc section """
+    """ returns a dict for the given ~/.dbtoolsrc section """
 
     parser = configparser.SafeConfigParser()
     homedir = os.environ['HOME']
@@ -26,11 +26,18 @@ def read_dbtoolsrc(section, fallback_section="hess"):
         return dict(parser.items(fallback_section))
 
 
-def query_database(query, dbconfig="hess", db="HD_tables"):
+def execute(query, dbconfig="hess", db="HD_tables"):
     """
+    query a HESS mysql database
 
-    Arguments:
-    - `query`:
+    Parameters:
+    -----------
+    query : string
+        SQL query to perform
+    dbconfig : string
+        section in `~/.dbtoolsrc` with the database connection info
+    db : str
+        which database to query
     """
 
     ver = 2 if sys.version_info.major <= 2 else 3
@@ -82,8 +89,8 @@ def get_date_range_for_period(period):
     Period like '{0}';
     """
 
-    result = query_database(query.format(period),
-                            dbconfig="hess", db="HESS_AstroParam")
+    result = execute(query.format(period),
+                     dbconfig="hess", db="HESS_AstroParam")
 
     return (result[0]['StartDate'], result[0]['EndDate'])
 
@@ -101,7 +108,7 @@ def get_run_range_for_dates(startdate, enddate):
     sstart = startdate.isoformat()
     send = (enddate + datetime.timedelta(days=2)).isoformat()
 
-    result = query_database(query.format(sstart, send), db="HESS_History")
+    result = execute(query.format(sstart, send), db="HESS_History")
     return result[0]['rmin'], result[0]['rmax']
 
 

@@ -1,10 +1,13 @@
 from __future__ import print_function
-from sqlalchemy import create_engine, and_
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
-from .hessdb import read_dbtoolsrc
 
 import logging
+
+from sqlalchemy import create_engine, and_
+from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
+from sqlalchemy.orm import sessionmaker
+
+from .hessdb import read_dbtoolsrc
+
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 

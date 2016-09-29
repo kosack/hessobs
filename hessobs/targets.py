@@ -36,7 +36,7 @@ import numpy.random
 from numpy import array
 import numpy as np
 from operator import itemgetter
-from .hessdb import read_dbtoolsrc, query_database
+from . import hessdb
 
 
 class Target(dict):
@@ -61,7 +61,7 @@ class Target(dict):
 
 
 def _do_proposal_query(query, dbconfig="proposals", db="HESS_Proposals"):
-    return query_database(query, dbconfig, db)
+    return hessdb.execute(query, dbconfig, db)
 
 
 def _new_target_from_name(name, hours=10):
