@@ -1,7 +1,7 @@
 Working With Targets
 ====================
 
-.. currentmodule:: hessobs.Targets
+.. currentmodule:: hessobs.targets
 
 The target data structure
 -------------------------
@@ -41,5 +41,5 @@ database using one of the helper functions like `load_targets_from_db()`
 Functions for manipulating target lists
 ---------------------------------------
 
-.. automodule:: hessobs.Targets
+.. automodule:: hessobs.targets
    :members: 

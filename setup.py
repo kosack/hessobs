@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import sys
 if sys.version_info < (3,0):
@@ -11,7 +11,7 @@ setup(name='hessobs',
       author='Karl Kosack',
       author_email='karl.kosack@cea.fr',
       license='BSD',
-      packages=['hessobs'],
+      packages=find_packages(),
       install_requires=[
           'astropy',
           'pymysql',
@@ -30,4 +30,6 @@ setup(name='hessobs',
           'bin/hessobs-verifyprop',
           'bin/hessobs-visplot'
       ],
-      zip_safe=False)
+      zip_safe=False,
+      package_data{'hessobs':,['test/darkness2017.dat']}
+)

@@ -1281,7 +1281,7 @@ class Darkness(object):
         totaldarkcorr = np.sum(
             self.effmap[self.boolmap]) * self.hours_per_map_bin
 
-        darkh, darkhcorr = self.hoursOfDarkness()
+        darkh, darkhcorr = self.hoursOfFreeDarkTime()
         print("              Darkness: {0:8.1f} of {1:8.1f} h are still free"
               .format(darkhcorr, totaldarkcorr))
 
@@ -1359,7 +1359,7 @@ class Darkness(object):
                 hh, chh = self.hoursForTarget(nearby_target_id)
                 if chh > 0.0 and self.isCombined(target_id, nearby_target_id):
                     status += " +{0:.0f}h from {1}"\
-                        .format(chh, self.getTarget(tt)['Target_Name'])
+                        .format(chh, self.getTarget(target_id)['Target_Name'])
 
             data.append((target_id, prop_id, rank, appclass,
                          targ['Working_Group'], name, targ['RA_2000'],

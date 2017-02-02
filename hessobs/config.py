@@ -74,4 +74,5 @@ DEFAULT_TARGET_ATTRIBS = dict(Zenith_Min=0,
                               Scheduling_Efficency='standard',  # vs 'ignore'
                               Scheduling_Zenith_Step=5.0,
                               Scheduling_Min_Fraction=0.5,
-                              Subarray_Accepted="CT1-5 Hybrid")
+                              Subarray_Accepted="CT1-5 Hybrid",
+                              Science_Grade=0.0)

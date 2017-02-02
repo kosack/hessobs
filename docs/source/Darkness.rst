@@ -1,7 +1,7 @@
 Single-Telescope Scheduling
 ===========================
 
-.. currentmodule:: hessobs.Darkness
+.. currentmodule:: hessobs.darkness
 
 The :class:`Darkness` object defines a 2D (day vs hour) map of the
 available dark time at the telescope site over a year. It allows
@@ -58,7 +58,7 @@ the `Scheduling_Preference` field in the :class:`hessobs.Targets.Target`
 API Documentation
 -----------------
 
-.. automodule:: hessobs.Darkness
+.. automodule:: hessobs.darkness
    :members:
       
 

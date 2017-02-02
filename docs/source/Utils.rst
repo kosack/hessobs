@@ -1,5 +1,5 @@
 Utility Functions
 =================
 
-.. automodule:: hessobs.Utils
+.. automodule:: hessobs.utils
    :members: 
