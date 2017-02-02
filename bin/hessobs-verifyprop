@@ -29,8 +29,7 @@ def print_header(targ):
     print("Your HESS Proposal Has Been Submitted")
     print("")
 
-    txt =
-"""Dear corresponding author of the proposal titled '{Title}'.
+    txt = """Dear corresponding author of the proposal titled '{Title}'.
 Thank you for your submission.  Your ProposalID is
 {Year}-{Seqno:03d}, which you can use to identify your
  proposal on the HESS WebSummary.
@@ -44,8 +43,8 @@ The targets you included are below, please verify
 that the info is correct and that any warnings
 are resolved (or can be ignored). If you want to
 correct a mistake, contact the OC secretary:
-
     """
+
     txt = txt.replace("\t", " ")
 
     for par in txt.split("<br>"):

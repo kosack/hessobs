@@ -608,7 +608,7 @@ class Darkness(object):
         floating-point date, useful for plotting """
 
         dates = self.dates[self.periods == period]
-        dbin = len(dates) / 2
+        dbin = int(len(dates) / 2)
         thedate = dates[dbin]
         return date2num(thedate)
 
@@ -1145,7 +1145,7 @@ class Darkness(object):
 
         return plist
 
-    def hoursOfDarkness(self, period=None):
+    def hoursOfFreeDarkTime(self, period=None):
         """returns (darkhours, corrected_darkhours) for full year or period
         if specified)
         """
@@ -1575,12 +1575,12 @@ class Darkness(object):
         """
         target_id = self._getTargetIndexForPosition(event.xdata, event.ydata)
         name = ""
-        if (target_id == Darkness.UNFILLED):
+        if target_id == Darkness.UNFILLED:
             name = "FREE DARKTIME"
             print('Clicked on FREE DARKTIME')
-        elif (target_id == Darkness.RESERVED):
+        elif target_id == Darkness.RESERVED:
             name = "Reserved Darktime"
-        elif (target_id > Darkness.UNFILLED):
+        elif target_id > Darkness.UNFILLED:
             try:
                 name = self.getTarget(target_id)['Target_Name']
             except:
@@ -1715,7 +1715,7 @@ class Darkness(object):
 
     def generateZenithAngleMapByTarget(self):
         print("Generating zenith angle map (may take some time)...")
-        zmap = np.zeros_like(self.map)
+        zmap = np.zeros_like(self.map, dtype=np.float)
         for target_id in self.targets:
 
             if np.sum(self.map == target_id) < 0:

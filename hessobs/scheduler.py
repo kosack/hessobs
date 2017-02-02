@@ -9,6 +9,9 @@ import pickle
 from matplotlib import pyplot as plt
 import abc
 
+import logging
+
+log = logging.getLogger(__name__)
 
 class Scheduler(object):
 
@@ -19,7 +22,7 @@ class Scheduler(object):
     """
     
     def __init__(self,):
-        print("Schedule Init")
+        log.info("Schedule Init")
         self._schedules = dict()
 
     @abc.abstractmethod
@@ -124,7 +127,7 @@ class HESSIIScheduler(Scheduler):
         """
         Set up a Subarray Schedule
         """
-        print("HESS-II init with ", darkfile)
+        log.info("HESS-II init with ", darkfile)
         super(HESSIIScheduler, self).__init__()
 
         self._schedules['hybrid'] = Darkness(darkfile, name="CT1-5 Hybrid",
@@ -175,8 +178,10 @@ class HESSIIScheduler(Scheduler):
                 self.hybrid.maskUnavailable(mask)
 
             else:
-                raise ValueError(
-                    "Unhandled subarray '{0}'".format(targ.Subarray))
+                log.warning("!!! Target {} has an unknown subarray '{}' and "
+                            "could not be scheduled !!!"
+                            .format(targ.Target_Name,
+                                    targ.Subarray_Accepted))
 
 
 def save_schedule(schedule, filename):

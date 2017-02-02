@@ -16,7 +16,12 @@ setup(name='hessobs',
           'astropy',
           'pymysql',
           'ephem',
-          'pandas'
+          'pandas',
+          'matplotlib',
+          'scipy',
+          'colorama',
+          'configobj',
+          'sqlalchemy'
       ],
       scripts=[
           'bin/hessobs-animate',

@@ -57,32 +57,20 @@ class Target(dict):
     def from_name(cls, name, hours=10):
         """ Create a new target with all the required fields,
         filling in the RA and DEC using a simbad query by object name."""
-        _new_target_from_name(name, hours)
+
+        from astropy.coordinates import SkyCoord
+
+        target = cls(Target_Name=name, Hours_Accepted=hours)
+
+        pos = SkyCoord.from_name(name)
+        target.RA_2000 = pos.ra.hour
+        target.Dec_2000 = pos.dec.deg
+
+        return target
 
 
 def _do_proposal_query(query, dbconfig="proposals", db="HESS_Proposals"):
     return hessdb.execute(query, dbconfig, db)
-
-
-def _new_target_from_name(name, hours=10):
-    """
-    Look up name on Simbad and return a new target, ready to have
-    other fields filled in.
-
-    Arguments:
-    - `name`:
-    - 'hours': default number of hours to fill in
-
-    """
-
-    from astropy.coordinates import SkyCoord
-
-    pos = SkyCoord.from_name(name)
-    target = new_target(Target_Name=name, Hours_Accepted=hours)
-    target['RA_2000'] = pos.ra.hour
-    target['Dec_2000'] = pos.dec.deg
-
-    return target
 
 
 def _set_target_defaults(targetdict):
@@ -93,7 +81,7 @@ def _set_target_defaults(targetdict):
 
     for attrib in list(config.DEFAULT_TARGET_ATTRIBS.keys()):
         if attrib not in targetdict or targetdict[attrib] is None:
-            targetdict[attrib] = config.DEFAULT_TARGET_ATTRIBS[attrib]
+           targetdict[attrib] = config.DEFAULT_TARGET_ATTRIBS[attrib]
 
 
 def save_targets(targets, filename="targets.dat"):
