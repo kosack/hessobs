@@ -16,7 +16,7 @@ using the following script (which requires the
 ``$HESSROOT/autoscheduler/bin/Darkness`` program to be accessable and
 a database connection to the HESS db):
 
-::code sh
+.. code-block:: sh
 
   darknesstable.pl 2015 > darkness.dat
 
