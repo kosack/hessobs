@@ -205,9 +205,7 @@ class Darkness(object):
 
     def _addTarget(self, target_id, targetinfo):
         if target_id in self.targets:
-            # print "!!!",targetinfo['Target_Name'],"ALREADY HAVE",target_id,\
-            #   "as",self.getTarget(target_id)['Target_Name'],\
-            #   "trying",target_id+0.1
+            log.debug("target {} already exists, incrementing target_id")
             return self._addTarget(target_id + 1, targetinfo)
         else:
             targetinfo['INDEX'] = target_id
