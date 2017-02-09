@@ -31,5 +31,5 @@ setup(name='hessobs',
           'bin/hessobs-visplot'
       ],
       zip_safe=False,
-      package_data={'hessobs':,['test/darkness2017.dat']}
+      package_data={'hessobs':['test/darkness2017.dat']}
 )
