@@ -47,6 +47,8 @@ SITES = {'HESS': c.EarthLocation(lon=16.3 * u.deg, lat=-23.26 * u.deg,
                                   height=2200 * u.m),
          }
 
+logger = logging.getLogger(__name__)
+
 
 def moonloc(times, site):
     """ returns moonrise, moonset """
@@ -55,8 +57,8 @@ def moonloc(times, site):
 
     moon = ephem.Moon()
     obs = ephem.Observer()
-    obs.lon = "{}".format(location.longitude.deg)
-    obs.lat = "{}".format(location.latitude.deg)
+    obs.lon = "{}".format(location.lon.deg)
+    obs.lat = "{}".format(location.lat.deg)
     obs.elev = location.height.to("m").value
 
     moon_alts = np.zeros_like(times)
@@ -82,61 +84,80 @@ def plot_windows(times, site, grid=True):
     MOON_TWILIGHT_ANGLE = -0.5 * u.deg
 
     fdates = np.array([date2num(x.datetime) for x in times])
-
-    fig = plt.figure(figsize=(10, 5))
-    ax = plt.subplot(1, 1, 1)
-    ax.xaxis_date()
-    ax.xaxis.set_minor_formatter(DateFormatter("%Hh"))
-    ax.xaxis.set_minor_locator(HourLocator(interval=2))
-    ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d     "))
-    ax.xaxis.set_major_locator(DayLocator())
-    ax.tick_params(pad=20)
-
     horizframe = c.AltAz(obstime=times, location=SITES[site])
     sun = c.get_sun(times).transform_to(horizframe)
-
-    plt.fill_between(fdates, 0, 90, sun.alt < -0 * u.deg,
-                     color='0.5', zorder=0)
-
-    # nautical twilight
-    plt.fill_between(fdates, 0, 90, sun.alt < CIVIL_TWILIGHT_ANGLE,
-                     color='0.3', zorder=0)
-
-    # astronomical twilight
-    plt.fill_between(fdates, 0, 90, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE,
-                     color='k', zorder=0)
-
-    # plot the moon window. Note that we don't use -18 degrees
     moonalt, moonaz = moonloc(times, site)
     moonup = (moonalt > MOON_TWILIGHT_ANGLE) \
         & (sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE)
 
-    plt.fill_between(fdates, 0, 90, moonup,
-                     color='sienna', zorder=0)
+    
+    fig, axes = plt.subplots(2,1, sharex=True, figsize=(10, 8))
+    for ax in axes:
+        ax.xaxis_date()
+        ax.xaxis.set_minor_formatter(DateFormatter("%Hh"))
+        ax.xaxis.set_minor_locator(HourLocator(interval=2))
+        ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d     "))
+        ax.xaxis.set_major_locator(DayLocator())
+        ax.tick_params(pad=20)
+        
+        ax.fill_between(fdates, 0, 360, sun.alt < -0 * u.deg,
+                        color='0.5', zorder=0)
 
-    plt.plot([], [], color='sienna', linewidth=10, label="Moon")
-    plt.plot([], [], color='0.5', linewidth=10, label="Twilight")
-    plt.plot([], [], color='k', linewidth=10, label="Darkness")
+        # nautical twilight
+        ax.fill_between(fdates, 0, 360, sun.alt < CIVIL_TWILIGHT_ANGLE,
+                     color='0.3', zorder=0)
 
+        # astronomical twilight
+        ax.fill_between(fdates, 0, 360, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE,
+                        color='k', zorder=0)
+
+        # plot the moon window. Note that we don't use -18 degrees
+
+        ax.fill_between(fdates, 0, 360, moonup,
+                        color='sienna', zorder=0)
+
+        ax.plot([], [], color='sienna', linewidth=10, label="Moon")
+        ax.plot([], [], color='0.5', linewidth=10, label="Twilight")
+        ax.plot([], [], color='k', linewidth=10, label="Darkness")
+        
+
+        if grid:
+            ax.grid(color="0.8", which="minor")
+            ax.grid(color="0.8", which="major")
+            ax.grid(color="0.8", which="major", lw=4, axis="x")
+
+    axes[0].set_ylabel("Altitude (deg)")
+    axes[0].set_ylim(15, 90)
+    axes[1].set_ylabel("Azimuth (deg)")
+    
     fig.autofmt_xdate(rotation=0, ha='center')
-    plt.ylabel("Altitude (deg)")
-    plt.ylim(15, 90)
-    if grid:
-        plt.grid(color="0.8", which="minor")
-        plt.grid(color="0.8", which="major")
-        plt.grid(color="0.8", which="major", lw=4, axis="x")
 
-    return fdates, moonalt
+    return fdates, moonalt, fig, axes
 
 
-def plot_altaz(times, position, label, site):
+def plot_altaz(axes, times, position, label, site):
     global SITES
+
+    if len(axes) != 2:
+        raise ValueError("Needed 2 axes")
+    
     horizframe = c.AltAz(obstime=times, location=SITES[site])
     altaz = position.transform_to(horizframe)
     fdates = np.array([date2num(x.datetime) for x in times])
-    plt.plot(fdates, altaz.alt.deg, lw=3, label=label,
-             path_effects=[patheffects.Stroke(linewidth=4, foreground='white'),
-                           patheffects.Normal()])
+    axes[0].plot(fdates, altaz.alt.deg, lw=3, label=label,
+                 path_effects=[patheffects.Stroke(linewidth=4,
+                                                  foreground='white'),
+                               patheffects.Normal()])
+
+    azimuths  =  altaz.az.deg 
+    azimuths[azimuths>359] = None  # create a break at the wrap-around point
+    axes[1].plot(fdates, azimuths, lw=3, label=label,
+                 path_effects=[patheffects.Stroke(linewidth=4,
+                                                  foreground='white'),
+                               patheffects.Normal()])
+
+    
+    logger.debug("AZ,ALT: %s", list(zip(altaz.az.deg, altaz.alt.deg)))
 
 
 def resolve_target_coordinates(target_names):
@@ -146,7 +167,7 @@ def resolve_target_coordinates(target_names):
     names = []
     coords = []
 
-    logging.debug("Resolving target coordinates...")
+    logger.debug("Resolving target coordinates...")
 
     for name in target_names:
         tag = name
@@ -184,37 +205,43 @@ def visplot(target_names, target_coords, site="HESS", hrange=10,
     if centerhour is not None:
         centerhour = int(centerhour)
     else:
-        centerhour = 24 - int(round(SITES[site].longitude.hour))
+        centerhour = 24 - int(round(SITES[site].lon.hour))
 
     centerdate = t.Time(datetime(now.year, now.month, now.day,
                                  centerhour), scale='utc')
 
     if date is not None:
-        logging.debug("setting date")
+        logger.debug("setting date")
         cc = t.Time(date, scale='utc').datetime
         centerdate = t.Time(datetime(cc.year, cc.month, cc.day, centerhour),
                             scale='utc')
 
     # first plot the visibility windows
     times = centerdate + dt
-    fd, malt = plot_windows(times, site, grid=grid)
+    fd, malt, fig, axes = plot_windows(times, site, grid=grid)
 
     for name, coord in zip(target_names, target_coords):
-        plot_altaz(times, coord, name, site)
+        plot_altaz(axes, times, coord, name, site)
 
-    plt.title("Visibility at {0}".format(site))
-    plt.xlabel("Time ({})".format(times.scale))
-    leg = plt.legend(loc="best", frameon=False)
+    for ax in axes:
+        ax.set_xlabel("Time ({})".format(times.scale))
+        leg = ax.legend(loc="best", frameon=False)
+        for tt in leg.texts:
+            tt.set_path_effects([patheffects.Stroke(linewidth=3, foreground="w"),
+                                 patheffects.Normal()])
 
-    for tt in leg.texts:
-        tt.set_path_effects([patheffects.Stroke(linewidth=3, foreground="w"),
-                             patheffects.Normal()])
 
+    axes[0].set_title("Visibility at {0}".format(site))
+
+
+
+    fig.tight_layout()
+    
     if output is None:
         plt.show()
     else:
         plt.savefig(output)
-        logging.info("Wrote to: '{0}'".format(output))
+        logger.info("Wrote to: '{0}'".format(output))
 
     return centerdate, times, fd, malt
 
@@ -263,17 +290,23 @@ based on examples in the AstroPy package
                       "an interactive viewer will be displayed from " +
                       "which the plot can be manipulated and saved.")
 
+    parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
+                      help="more debugging info")
+
     parser.add_option("-q", "--quiet", dest="quiet",
                       action="store_true",
                       help="less verbose output")
 
     parser.add_option("-x", "--xkcd", dest="xkcd", action="store_true")
 
-    logging.basicConfig(level=logging.INFO)
-
     opts, args = parser.parse_args(sys.argv)
     args.pop(0)
     grid = True
+
+    if opts.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     if (opts.xkcd):
         plt.xkcd()
