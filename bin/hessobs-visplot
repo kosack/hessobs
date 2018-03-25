@@ -90,8 +90,7 @@ def plot_windows(times, site, grid=True):
     moonup = (moonalt > MOON_TWILIGHT_ANGLE) \
         & (sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE)
 
-    
-    fig, axes = plt.subplots(2,1, sharex=True, figsize=(10, 8))
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(10, 8))
     for ax in axes:
         ax.xaxis_date()
         ax.xaxis.set_minor_formatter(DateFormatter("%Hh"))
@@ -99,13 +98,13 @@ def plot_windows(times, site, grid=True):
         ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d     "))
         ax.xaxis.set_major_locator(DayLocator())
         ax.tick_params(pad=20)
-        
+
         ax.fill_between(fdates, 0, 360, sun.alt < -0 * u.deg,
                         color='0.5', zorder=0)
 
         # nautical twilight
         ax.fill_between(fdates, 0, 360, sun.alt < CIVIL_TWILIGHT_ANGLE,
-                     color='0.3', zorder=0)
+                        color='0.3', zorder=0)
 
         # astronomical twilight
         ax.fill_between(fdates, 0, 360, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE,
@@ -119,7 +118,6 @@ def plot_windows(times, site, grid=True):
         ax.plot([], [], color='sienna', linewidth=10, label="Moon")
         ax.plot([], [], color='0.5', linewidth=10, label="Twilight")
         ax.plot([], [], color='k', linewidth=10, label="Darkness")
-        
 
         if grid:
             ax.grid(color="0.8", which="minor")
@@ -129,7 +127,7 @@ def plot_windows(times, site, grid=True):
     axes[0].set_ylabel("Altitude (deg)")
     axes[0].set_ylim(15, 90)
     axes[1].set_ylabel("Azimuth (deg)")
-    
+
     fig.autofmt_xdate(rotation=0, ha='center')
 
     return fdates, moonalt, fig, axes
@@ -140,7 +138,7 @@ def plot_altaz(axes, times, position, label, site):
 
     if len(axes) != 2:
         raise ValueError("Needed 2 axes")
-    
+
     horizframe = c.AltAz(obstime=times, location=SITES[site])
     altaz = position.transform_to(horizframe)
     fdates = np.array([date2num(x.datetime) for x in times])
@@ -149,14 +147,13 @@ def plot_altaz(axes, times, position, label, site):
                                                   foreground='white'),
                                patheffects.Normal()])
 
-    azimuths  =  altaz.az.deg 
-    azimuths[azimuths>359] = None  # create a break at the wrap-around point
+    azimuths = altaz.az.deg
+    azimuths[azimuths > 359] = None  # create a break at the wrap-around point
     axes[1].plot(fdates, azimuths, lw=3, label=label,
                  path_effects=[patheffects.Stroke(linewidth=4,
                                                   foreground='white'),
                                patheffects.Normal()])
 
-    
     logger.debug("AZ,ALT: %s", list(zip(altaz.az.deg, altaz.alt.deg)))
 
 
@@ -230,13 +227,10 @@ def visplot(target_names, target_coords, site="HESS", hrange=10,
             tt.set_path_effects([patheffects.Stroke(linewidth=3, foreground="w"),
                                  patheffects.Normal()])
 
-
     axes[0].set_title("Visibility at {0}".format(site))
 
-
-
     fig.tight_layout()
-    
+
     if output is None:
         plt.show()
     else:
