@@ -5,7 +5,7 @@ if sys.version_info < (3,0):
     sys.exit('Sorry, Python < 3.0 is not supported')
 
 setup(name='hessobs',
-      version='0.2',
+      version='0.2.1',
       description='Observation Scheduling and exploration for HESS',
       url='',
       author='Karl Kosack',
