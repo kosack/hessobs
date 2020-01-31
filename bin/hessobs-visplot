@@ -28,16 +28,23 @@ from astropy import coordinates as c
 from astropy import time as t
 from astropy import units as u
 from astropy.utils import iers
-from astropy.utils.data import download_file
+# from astropy.utils.data import download_file
 from matplotlib import patheffects
 from matplotlib import pyplot as plt
 from matplotlib.dates import date2num, HourLocator, DayLocator, DateFormatter
-
-iers.IERS.iers_table = iers.IERS_A.open(download_file(iers.IERS_A_URL,
-                                                      cache=True))
-
+from astropy.coordinates import Angle, AltAz
 
 from datetime import datetime
+
+# iers table download stopped working at some point, so I default to the IERS_B table
+# supplied with astropy.
+# iers.IERS.iers_table = iers.IERS_A.open(download_file(iers.IERS_A_URL,
+#                                                       cache=True))
+
+tx = t.Time('2010:001')
+iers_b = iers.IERS_B.open()
+iers_b.ut1_utc(tx)
+
 
 SITES = {'HESS': c.EarthLocation(lon=16.3 * u.deg, lat=-23.26 * u.deg,
                                  height=1800 * u.m),
@@ -63,14 +70,17 @@ def moonloc(times, site):
 
     moon_alts = np.zeros_like(times)
     moon_azs = np.zeros_like(times)
+    moon_phase = np.zeros_like(times)
 
     for ii, tt in enumerate(times):
         obs.date = ephem.Date(tt.datetime)
         moon.compute(obs)
         moon_alts[ii] = moon.alt * 180. / np.pi
         moon_azs[ii] = moon.az * 180. / np.pi
+        moon_phase[ii] = moon.phase
 
-    return moon_alts * u.deg, moon_azs * u.deg
+    print("MOON PHASE: %2.1f" % np.mean(moon_phase))
+    return moon_alts * u.deg, moon_azs * u.deg, moon_phase
 
 
 def plot_windows(times, site, grid=True):
@@ -86,9 +96,15 @@ def plot_windows(times, site, grid=True):
     fdates = np.array([date2num(x.datetime) for x in times])
     horizframe = c.AltAz(obstime=times, location=SITES[site])
     sun = c.get_sun(times).transform_to(horizframe)
-    moonalt, moonaz = moonloc(times, site)
+
+    # also calculate the moon location
+    moonalt, moonaz, moonph = moonloc(times, site)
     moonup = (moonalt > MOON_TWILIGHT_ANGLE) \
         & (sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE)
+
+    a_alt = Angle(moonalt, unit=u.deg)
+    a_az = Angle(moonaz, unit=u.deg)
+    moon_alt_az = AltAz(alt=a_alt, az=a_az, location=SITES[site], obstime=times)
 
     fig, axes = plt.subplots(2, 1, sharex=True, figsize=(10, 8))
     for ax in axes:
@@ -124,6 +140,16 @@ def plot_windows(times, site, grid=True):
             ax.grid(color="0.8", which="major")
             ax.grid(color="0.8", which="major", lw=4, axis="x")
 
+    # also plot the moon once
+    axes[0].plot(fdates, moon_alt_az.alt.deg, lw=3, label='Moon',
+                 path_effects=[patheffects.Stroke(linewidth=4,
+                                                  foreground='white'),
+                               patheffects.Normal()])
+    axes[1].plot(fdates, moon_alt_az.az.deg, lw=3, label='Moon',
+                 path_effects=[patheffects.Stroke(linewidth=4,
+                                                  foreground='white'),
+                               patheffects.Normal()])
+
     axes[0].set_ylabel("Altitude (deg)")
     axes[0].set_ylim(15, 90)
     axes[1].set_ylabel("Azimuth (deg)")
@@ -140,13 +166,28 @@ def plot_altaz(axes, times, position, label, site):
         raise ValueError("Needed 2 axes")
 
     horizframe = c.AltAz(obstime=times, location=SITES[site])
+    moonalt, moonaz, moonph = moonloc(times, site)
+    a_alt = Angle(moonalt, unit=u.deg)
+    a_az = Angle(moonaz, unit=u.deg)
+    moon_alt_az = AltAz(alt=a_alt, az=a_az, location=SITES[site], obstime=times)
+
     altaz = position.transform_to(horizframe)
+    moon_seps = moon_alt_az.separation(altaz)
+    mean_moon_sep = np.mean(moon_seps.deg)
+    print("Mean separation between Moon and %s = %2.1f" % (label, mean_moon_sep))
+
     fdates = np.array([date2num(x.datetime) for x in times])
     axes[0].plot(fdates, altaz.alt.deg, lw=3, label=label,
                  path_effects=[patheffects.Stroke(linewidth=4,
                                                   foreground='white'),
                                patheffects.Normal()])
-
+    '''
+    axes[0].plot(fdates, moon_seps.deg, c=p_alt_az[0].get_color(), lw=3, ls="--",
+                 label='separation moon-%s' % label,
+                 path_effects=[patheffects.Stroke(linewidth=4,
+                                                  foreground='white'),
+                               patheffects.Normal()])
+    '''
     azimuths = altaz.az.deg
     azimuths[azimuths > 359] = None  # create a break at the wrap-around point
     axes[1].plot(fdates, azimuths, lw=3, label=label,
