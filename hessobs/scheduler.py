@@ -26,7 +26,7 @@ class Scheduler(object):
         self._schedules = dict()
 
     @abc.abstractmethod
-    def schedule(self, targets):
+    def schedule(self, targets, combine):
         """ do the scheduling (should be overridden in derived classes) """
         pass
 
@@ -153,7 +153,7 @@ class HESSIIScheduler(Scheduler):
         """ access the Stereo (CT1-4) schedule plane """
         return self._schedules['stereo']
 
-    def schedule(self, targets):
+    def schedule(self, targets, combine):
         """
         fill all schedules, taking into account previously scheduled
         observations that block one or more subarrays.
@@ -165,16 +165,16 @@ class HESSIIScheduler(Scheduler):
         for targ in targets:
 
             if targ.Subarray_Accepted == "CT1-5 Hybrid":
-                mask = self.hybrid.fillTarget(targ, combine_close=True)
+                mask = self.hybrid.fillTarget(targ, combine_close=combine)
                 self.mono.maskUnavailable(mask)
                 self.stereo.maskUnavailable(mask)
 
             elif targ.Subarray_Accepted == "CT5 Mono":
-                mask = self.mono.fillTarget(targ, combine_close=True)
+                mask = self.mono.fillTarget(targ, combine_close=combine)
                 self.hybrid.maskUnavailable(mask)
 
             elif targ.Subarray_Accepted == "CT1-4 Stereo":
-                mask = self.stereo.fillTarget(targ, combine_close=True)
+                mask = self.stereo.fillTarget(targ, combine_close=combine)
                 self.hybrid.maskUnavailable(mask)
 
             else:
