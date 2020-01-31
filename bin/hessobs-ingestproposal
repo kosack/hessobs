@@ -50,7 +50,7 @@ def translate_fields(fields):
 
         if key == "RA":
             column = "RA_2000"
-            if (value < 0):
+            if (int(value) < 0):
                 value = -1
             else:
                 value = float(value) * 12.0 / 180.0  # change to hours
@@ -90,11 +90,9 @@ def translate_fields(fields):
         #         value = "CT1-4 Stereo"
 
         elif key == "Working-Group" or key == "Working-Group2":
-            wgname = {'GAL': 'Galactic',
-                      'EGAL': 'Extragalactic',
-                      'ASTRO': 'Astroparticle',
-                      'INST': 'Instrument',
-                      'A&R': 'Analysis and Reconstruction'}
+            wgname = {'AP': 'Astrophysics Departement',
+                      'OP': 'Operations Departement',
+                      'IT': 'IT Departement'}
             if (value != ''):
                 value = wgname[value]
 
@@ -104,17 +102,42 @@ def translate_fields(fields):
         elif key == 'Subarray' or key == 'Subarrays-alt':
             continue
 
+        elif "Sky_Brightness" in key:
+            brightness_map = {'dark': 'Dark',
+                              'gray': 'Gray',
+                              'bright': 'Bright'}
+            if (value != ''):
+                value = brightness_map[value]
+
+            if key == "Sky_Brightness_1":
+                column = 'Sky_Brightness_1'
+
+            if key == "Sky_Brightness_2":
+                column = "Sky_Brightness_2"
+
+            if key == "Sky_Brightness_3":
+                column = "Sky_Brightness_3"
+
         translated[column] = str(value)
 
-    # handle subarrays, which are a more complicated case:
-    if 'Subarray' in fields:
-        translated['Subarray_Requested_1'] = translate_subarray(fields[
-                                                                'Subarray'])
+        # handle subarrays, which are a more complicated case:
+        if 'Subarray_Requested_' in fields:
+            translated['Subarray_Requested_1'] = translate_subarray(fields[
+                                                                    'Subarray_Requested_1'])
+            if "Subarray_Requested_2" in fields:
+                translated['Subarray_Requested_2'] = translate_subarray(fields[
+                                                                        'Subarray_Requested_2'])
+            if "Subarray_Requested_3" in fields:
+                translated['Subarray_Requested_3'] = translate_subarray(fields[
+                                                                        'Subarray_Requested_3'])
+        '''
+        This is outdated outdated
         if fields['Subarrays-alt'] != '':
-            sub_alts = asarray([fields['Subarrays-alt'],]).flatten()
+            sub_alts = asarray([fields['Subarrays-alt'], ]).flatten()
             for ii, sub in enumerate(sub_alts):
                 sub = translate_subarray(sub.strip())
-                translated['Subarray_Requested_{}'.format(ii + 2)] = sub
+                translated['Subarray_Requested_{}'.format(ii + 2)] = translate_subarray(sub)
+        '''
 
     return translated
 
@@ -147,12 +170,12 @@ def upload_pdf(filename, year, seqno, revision):
     # command= "scp {0} {1}/{2}".format(filename, remote, newfilename)
 
     print("EXECUTING: '", command, "'")
-    os.system(command)
+    # This is not correctly setup for me currently. So no execution of the command for now.
+    # os.system(command)
 
 
 def validate(config):
     """ check that the inputs are correct """
-    
     # hack to deal with when keywords is blank (string_list seems to
     # require at least one value)
     if ('Keywords' in config):
@@ -202,8 +225,8 @@ if __name__ == '__main__':
     if opts.write:
         propdb.WRITE = True
 
-    obsspecfile = "proposal.configspec"
-    targspecfile = "targets.configspec"
+    obsspecfile = "configspecs/proposal.configspec"
+    targspecfile = "configspecs/targets.configspec"
 
     print("ID  :", year, seqno, revision)
     print("TECH:", propfile)
