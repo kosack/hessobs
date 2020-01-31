@@ -317,7 +317,7 @@ class Darkness(object):
         map_fdates = np.array([date2num(x) for x in map_dates])
 
         range_utc = (-6.5, 5.5)
-        nbins_utc = (range_utc[1] - range_utc[0]) * self._bins_per_hour
+        nbins_utc = int((range_utc[1] - range_utc[0]) * self._bins_per_hour)
 
         self._hours_per_map_bin = (range_utc[1] -
                                    range_utc[0]) / float(nbins_utc)
