@@ -326,7 +326,7 @@ class Darkness(object):
         utc_ends = self.utc_ends
 
         map_utcs = np.linspace(range_utc[0], range_utc[1], nbins_utc)
-        schedmap = np.zeros((nbins_date, nbins_utc), dtype='I')
+        schedmap = np.zeros((nbins_date, int(nbins_utc)), dtype='I')
 
         for jd, start, end in zip(jds, utc_starts, utc_ends):
             iday = jd - jdmin
