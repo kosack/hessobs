@@ -17,10 +17,10 @@ def read_dbtoolsrc(section, fallback_section="hess"):
     """ returns a dict for the given ~/.dbtoolsrc section """
 
     parser = configparser.SafeConfigParser()
-    homedir = os.environ['HOME']
+    homedir = os.environ["HOME"]
     parser.read("{0}/.dbtoolsrc".format(homedir))
 
-    if (parser.has_section(section)):
+    if parser.has_section(section):
         return dict(parser.items(section))
     else:
         return dict(parser.items(fallback_section))
@@ -45,24 +45,32 @@ def execute(query, dbconfig="hess", db="HD_tables"):
     dbtoolsrc = read_dbtoolsrc(dbconfig)
 
     try:
-        logger.debug("Initiating DB connection: %s on %s for query (%s)",
-                     dbtoolsrc['user'], dbtoolsrc['host'], query)
+        logger.debug(
+            "Initiating DB connection: %s on %s for query (%s)",
+            dbtoolsrc["user"],
+            dbtoolsrc["host"],
+            query,
+        )
 
         if ver == 3:
-            dbh = mysql.connect(user=dbtoolsrc['user'],
-                                host=dbtoolsrc['host'],
-                                port=int(dbtoolsrc['port']),
-                                passwd=dbtoolsrc['password'],
-                                db=db)
+            dbh = mysql.connect(
+                user=dbtoolsrc["user"],
+                host=dbtoolsrc["host"],
+                port=int(dbtoolsrc["port"]),
+                passwd=dbtoolsrc["password"],
+                db=db,
+            )
 
             cursor = dbh.cursor(cursors.DictCursor)
 
         else:
-            dbh = mysql.connect(user=dbtoolsrc['user'],
-                                host=dbtoolsrc['host'],
-                                port=int(dbtoolsrc['port']),
-                                passwd=dbtoolsrc['password'],
-                                db=db)
+            dbh = mysql.connect(
+                user=dbtoolsrc["user"],
+                host=dbtoolsrc["host"],
+                port=int(dbtoolsrc["port"]),
+                passwd=dbtoolsrc["password"],
+                db=db,
+            )
             cursor = dbh.cursor(cursors.DictCursor)
 
         logger.debug("QUERY: {}".format(query))
@@ -89,10 +97,9 @@ def get_date_range_for_period(period):
     Period like '{0}';
     """
 
-    result = execute(query.format(period),
-                     dbconfig="hess", db="HESS_AstroParam")
+    result = execute(query.format(period), dbconfig="hess", db="HESS_AstroParam")
 
-    return (result[0]['StartDate'], result[0]['EndDate'])
+    return (result[0]["StartDate"], result[0]["EndDate"])
 
 
 def get_run_range_for_dates(startdate, enddate):
@@ -100,8 +107,7 @@ def get_run_range_for_dates(startdate, enddate):
     passed as :class:`datetime.datetime` objects.
     """
 
-    query = \
-        """
+    query = """
     SELECT MIN(RunNumber) as rmin ,MAX(RunNumber) as rmax FROM Run_Start 
     WHERE TimeOfStart>'{0}' AND TimeOfStart < '{1}'
     """
@@ -109,7 +115,7 @@ def get_run_range_for_dates(startdate, enddate):
     send = (enddate + datetime.timedelta(days=2)).isoformat()
 
     result = execute(query.format(sstart, send), db="HESS_History")
-    return result[0]['rmin'], result[0]['rmax']
+    return result[0]["rmin"], result[0]["rmax"]
 
 
 def get_run_range_for_period(period):

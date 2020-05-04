@@ -1,4 +1,5 @@
 from __future__ import with_statement, print_function, absolute_import
+
 """
 Tools to work with target lists
 
@@ -49,9 +50,16 @@ class Target(dict):
         _set_target_defaults(self)
 
     def __str__(self):
-        return "--------\n" +\
-            "\n".join(["{0:24s} : {1}".format(key, self.__dict__[key])
-                       for key in sorted(self.__dict__)]) + "\n"
+        return (
+            "--------\n"
+            + "\n".join(
+                [
+                    "{0:24s} : {1}".format(key, self.__dict__[key])
+                    for key in sorted(self.__dict__)
+                ]
+            )
+            + "\n"
+        )
 
     @classmethod
     def from_name(cls, name, hours=10):
@@ -81,7 +89,7 @@ def _set_target_defaults(targetdict):
 
     for attrib in list(config.DEFAULT_TARGET_ATTRIBS.keys()):
         if attrib not in targetdict or targetdict[attrib] is None:
-           targetdict[attrib] = config.DEFAULT_TARGET_ATTRIBS[attrib]
+            targetdict[attrib] = config.DEFAULT_TARGET_ATTRIBS[attrib]
 
 
 def save_targets(targets, filename="targets.dat"):
@@ -94,7 +102,7 @@ def save_targets(targets, filename="targets.dat"):
     pickle.dump(targets, outf)
 
 
-def target_list_to_dict(targets, key='Target_Name'):
+def target_list_to_dict(targets, key="Target_Name"):
     """ returns dictionary indexed by given key"""
     targdict = dict()
     for targ in targets:
@@ -102,8 +110,7 @@ def target_list_to_dict(targets, key='Target_Name'):
     return targdict
 
 
-def copy_target_between_sets(source_setnum, dest_setnum, target_name,
-                             transform=None):
+def copy_target_between_sets(source_setnum, dest_setnum, target_name, transform=None):
     """
     Copies a target entry from from proposal1 to proposal2 (which can
     be the same proposal if you want to duplicate the target with some
@@ -113,14 +120,13 @@ def copy_target_between_sets(source_setnum, dest_setnum, target_name,
     query = """ SELECT * FROM Observation_Proposals WHERE
     SetNum={set1} and Target_Name like '{targ}' """
 
-    results = _do_proposal_query(
-        query.format(set1=source_setnum, targ=target_name))
+    results = _do_proposal_query(query.format(set1=source_setnum, targ=target_name))
 
     print(results)
 
     for result in results:
-        del result['Entry']
-        result['SetNum'] = dest_setnum
+        del result["Entry"]
+        result["SetNum"] = dest_setnum
         if transform:
             transform(result)
         print(result)
@@ -138,10 +144,12 @@ def copy_target_between_sets(source_setnum, dest_setnum, target_name,
         _do_proposal_query(sql.format(colnames=colnames, vals=vals))
 
 
-def load_targets_from_db(where="Hours_Accepted>0",
-                         order="Working_Group_Rank ASC",
-                         fallbackfile=None,
-                         normalize=True):
+def load_targets_from_db(
+    where="Hours_Accepted>0",
+    order="Working_Group_Rank ASC",
+    fallbackfile=None,
+    normalize=True,
+):
     """
     Loads targets from Observation_Proposals database. If no
     dbconnection, loads a pickled version.
@@ -162,12 +170,11 @@ def load_targets_from_db(where="Hours_Accepted>0",
         targets = []
         fullwhere = "(" + where + ")"
 
-        results = _do_proposal_query(
-            query.format(where=fullwhere, order=order))
+        results = _do_proposal_query(query.format(where=fullwhere, order=order))
 
         for row in results:
-            if 'Working_Group_Rank' not in row:
-                row['Working_Group_Rank'] = 0
+            if "Working_Group_Rank" not in row:
+                row["Working_Group_Rank"] = 0
 
         if fallbackfile is not None:
             save_targets(results, fallbackfile)
@@ -190,7 +197,7 @@ def load_targets_from_db(where="Hours_Accepted>0",
 
 def mutate(arr):
     r = numpy.random.randint(1, len(arr))
-    return numpy.append(arr[r - 1:-1], arr[0:r])
+    return numpy.append(arr[r - 1 : -1], arr[0:r])
 
 
 def stochastically_optimized_schedule(darkfile, targets, iterations=50):
@@ -210,9 +217,9 @@ def stochastically_optimized_schedule(darkfile, targets, iterations=50):
     dark = Darkness(darkfile)
 
     for targ in targets:
-        dark.fillTarget(targetinfo=targ,
-                        nhours=float(targ['Hours_Accepted']),
-                        verbose=False)
+        dark.fillTarget(
+            targetinfo=targ, nhours=float(targ["Hours_Accepted"]), verbose=False
+        )
     maxscore = dark.score
 
     scores = []
@@ -224,12 +231,12 @@ def stochastically_optimized_schedule(darkfile, targets, iterations=50):
         dark.clear()
 
         targs = numpy.random.permutation(targets)
-#        targs = mutate(targs)
+        #        targs = mutate(targs)
 
         for targ in targs:
-            dark.fillTarget(targetinfo=targ,
-                            nhours=float(targ['Hours_Accepted']),
-                            verbose=False)
+            dark.fillTarget(
+                targetinfo=targ, nhours=float(targ["Hours_Accepted"]), verbose=False
+            )
         score = dark.score
         scores.append(score)
 
@@ -241,9 +248,9 @@ def stochastically_optimized_schedule(darkfile, targets, iterations=50):
 
     dark = Darkness("../2012/darkness2012.dat")
     for targ in besttargs:
-        dark.fillTarget(targetinfo=targ,
-                        nhours=float(targ['Hours_Accepted']),
-                        verbose=False)
+        dark.fillTarget(
+            targetinfo=targ, nhours=float(targ["Hours_Accepted"]), verbose=False
+        )
 
     return dark, scores
 
@@ -262,14 +269,22 @@ def update_target(targets, targname, **kwargs):
     """
 
     for targ in targets:
-        if targ['Target_Name'].startswith(targname):
+        if targ["Target_Name"].startswith(targname):
             for key in kwargs:
                 if key in targ:
-                    print("UPDATED: ", targ['Target_Name'], key,
-                          ":", targ[key], "-->", kwargs[key])
+                    print(
+                        "UPDATED: ",
+                        targ["Target_Name"],
+                        key,
+                        ":",
+                        targ[key],
+                        "-->",
+                        kwargs[key],
+                    )
                 else:
-                    print("UPDATED: ", targ['Target_Name'], "ADDED",
-                          key, "=", kwargs[key])
+                    print(
+                        "UPDATED: ", targ["Target_Name"], "ADDED", key, "=", kwargs[key]
+                    )
 
                 targ[key] = kwargs[key]
 
@@ -280,13 +295,12 @@ def find_target(targets, targname):
     """ return the target info, searching by targname """
 
     for targ in targets:
-        if targ['Target_Name'].startswith(targname):
-            print("FOUND: ", targ['Target_Name'])
+        if targ["Target_Name"].startswith(targname):
+            print("FOUND: ", targ["Target_Name"])
             return targ
 
 
-def load_targets_using_block_heuristic(blocksize=20, timeweighted=False,
-                                       where="1"):
+def load_targets_using_block_heuristic(blocksize=20, timeweighted=False, where="1"):
     """
     Loads targets in an order that tries to balance WG time.
 
@@ -296,10 +310,7 @@ def load_targets_using_block_heuristic(blocksize=20, timeweighted=False,
     """
 
     # define the order of WG cycle:
-    wgs = ['Galactic',
-           'Extragalactic',
-           'Astroparticle'
-           ]
+    wgs = ["Galactic", "Extragalactic", "Astroparticle"]
 
     ntargs = 0
     targs = dict()
@@ -310,11 +321,13 @@ def load_targets_using_block_heuristic(blocksize=20, timeweighted=False,
 
     for wg in wgs:
         fallback = "targets-{0}.dat".format(wg)
-        targs[wg] = list(load_targets_from_db(where="Working_Group='{0}'"
-                                              .format(wg) + " AND (" + where
-                                              + ")",
-                                              fallbackfile=fallback,
-                                              order=order))
+        targs[wg] = list(
+            load_targets_from_db(
+                where="Working_Group='{0}'".format(wg) + " AND (" + where + ")",
+                fallbackfile=fallback,
+                order=order,
+            )
+        )
         ntargs += len(targs[wg])
 
     # now build target list by cycling through targets, interleaving
@@ -330,11 +343,11 @@ def load_targets_using_block_heuristic(blocksize=20, timeweighted=False,
 
     while count < ntargs:
 
-        if (currhours > blocksize):
+        if currhours > blocksize:
             iwg += 1
             currhours = 0
 
-        if (iwg >= len(wgs)):
+        if iwg >= len(wgs):
             iwg = 0
 
         wg = wgs[iwg]
@@ -343,7 +356,7 @@ def load_targets_using_block_heuristic(blocksize=20, timeweighted=False,
             tt = targs[wg].pop(0)
             targets.append(tt)
             count += 1
-            currhours += tt['Hours_Accepted']
+            currhours += tt["Hours_Accepted"]
             # print count, currhours,wg
         else:
             iwg += 1
@@ -367,14 +380,15 @@ def write_target_order(targets, filename):
     with open(filename, "w") as outfile:
         outfile.write("|Entry|Subarray|Rank|Class|RA|WG|Name|\n")
         for targ in targets:
-            line = '| {0} | {1} | {2} | {3} | {4:5.1f} | "{5}" | "{6}" |\n' \
-                .format(targ['Entry'],
-                        targ['Subarray'],
-                        targ['Working_Group_Rank'],
-                        targ['Approval_Class'],
-                        targ['RA_2000'],
-                        targ['Working_Group'],
-                        targ['Target_Name'])
+            line = '| {0} | {1} | {2} | {3} | {4:5.1f} | "{5}" | "{6}" |\n'.format(
+                targ["Entry"],
+                targ["Subarray"],
+                targ["Working_Group_Rank"],
+                targ["Approval_Class"],
+                targ["RA_2000"],
+                targ["Working_Group"],
+                targ["Target_Name"],
+            )
             outfile.write(line)
 
     print("Wrote:", filename)
@@ -399,17 +413,18 @@ def order_targets_from_file(targets, filename):
     unknown = 999
 
     from astropy.table import Table
+
     tab = Table.read(filename, format="ascii.fixed_width", delimiter="|")
-    ordered_entries = tab['Entry']
+    ordered_entries = tab["Entry"]
 
     for entry in ordered_entries:
         if entry in tdict:
-            tdict[entry]['New_Fill_Order'] = order
+            tdict[entry]["New_Fill_Order"] = order
             order += 1
         else:
             print("!!!! Target", entry, " not found, putting at end")
             tdict[entry] = Target()
-            tdict[entry]['New_Fill_Order'] = unknown
+            tdict[entry]["New_Fill_Order"] = unknown
             unknown += 1
 
     print("Ordered targets from", filename)
@@ -417,13 +432,13 @@ def order_targets_from_file(targets, filename):
     # check that all targets received an order number:
     for targ in targets:
         if "New_Fill_Order" not in targ:
-            print("!!! No Fill Order found for target: ", targ['Target_Name'])
-            targ['New_Fill_Order'] = order
+            print("!!! No Fill Order found for target: ", targ["Target_Name"])
+            targ["New_Fill_Order"] = order
             order += 1
 
     # now put it back as an ordered list:
     targets = list(tdict.values())
-    targets = sorted(targets, key=lambda x: x['New_Fill_Order'])
+    targets = sorted(targets, key=lambda x: x["New_Fill_Order"])
 
     return targets
 
@@ -444,8 +459,7 @@ def group_by_ra_band(targetlist, rabins=None, binrange=[0, 24], bins=10):
     if rabins is None:
         rabins = np.linspace(binrange[0], binrange[1], bins)
 
-    ii, ras = np.array([[ii, targ['RA_2000']]
-                        for ii, targ in enumerate(targetlist)]).T
+    ii, ras = np.array([[ii, targ["RA_2000"]] for ii, targ in enumerate(targetlist)]).T
     ii = ii.astype(int)
     bands = np.digitize(ras, rabins)
 
@@ -455,8 +469,7 @@ def group_by_ra_band(targetlist, rabins=None, binrange=[0, 24], bins=10):
     boundaries = list()
 
     for iband in range(len(rabins) - 1):
-        bandname = "RA {0:02.0f}-{1:02.0f} h".format(
-            rabins[iband], rabins[iband + 1])
+        bandname = "RA {0:02.0f}-{1:02.0f} h".format(rabins[iband], rabins[iband + 1])
         targsinband = tt[ii[bands == iband + 1]]
         grouped[bandname] = targsinband
         boundaries.append((rabins[iband], rabins[iband + 1]))
@@ -491,12 +504,13 @@ def print_conflicting_targets(targetlist, rabins=None, dark=None):
         tothrs = 0
 
         for targ in sorted(groups[group], key=itemgetter("Working_Group_Rank")):
-            targ['Working_Group'] = targ['Working_Group'][0:7]
-            targ['Approval_Class'] = targ['Approval_Class'][0:1]
-            if 'Hours_Scheduled' not in targ:
-                targ['Hours_Scheduled'] = 0
+            targ["Working_Group"] = targ["Working_Group"][0:7]
+            targ["Approval_Class"] = targ["Approval_Class"][0:1]
+            if "Hours_Scheduled" not in targ:
+                targ["Hours_Scheduled"] = 0
             print(fmt.format(**targ))
-            tothrs += targ['Hours_Accepted']
+            tothrs += targ["Hours_Accepted"]
 
-        print("                                     TOTAL REQ:   {0:.1f}"
-              .format(tothrs))
+        print(
+            "                                     TOTAL REQ:   {0:.1f}".format(tothrs)
+        )

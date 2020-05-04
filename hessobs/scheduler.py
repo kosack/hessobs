@@ -13,6 +13,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class Scheduler(object):
 
     """abstract base class for schedulers
@@ -20,7 +21,7 @@ class Scheduler(object):
     All schedulers should provide a :func:`schedule` method that takes
     a target list (list of Target dictionaries)
     """
-    
+
     def __init__(self,):
         log.info("Schedule Init")
         self._schedules = dict()
@@ -130,28 +131,25 @@ class HESSIIScheduler(Scheduler):
         log.info("HESS-II init with ", darkfile)
         super(HESSIIScheduler, self).__init__()
 
-        self._schedules['hybrid'] = Darkness(darkfile, name="CT1-5 Hybrid",
-                                             **kwargs)
+        self._schedules["hybrid"] = Darkness(darkfile, name="CT1-5 Hybrid", **kwargs)
 
-        self._schedules['mono'] = Darkness(darkfile, name="CT5 Mono",
-                                           **kwargs)
-        self._schedules['stereo'] = Darkness(darkfile, name="CT1-4 Stereo",
-                                             **kwargs)
+        self._schedules["mono"] = Darkness(darkfile, name="CT5 Mono", **kwargs)
+        self._schedules["stereo"] = Darkness(darkfile, name="CT1-4 Stereo", **kwargs)
 
     @property
-    def hybrid(self, ):
+    def hybrid(self,):
         """ access the Hybrid (CT1-5) schedule plane """
-        return self._schedules['hybrid']
+        return self._schedules["hybrid"]
 
     @property
-    def mono(self, ):
+    def mono(self,):
         """ access the Mono (CT5) schedule plane """
-        return self._schedules['mono']
+        return self._schedules["mono"]
 
     @property
-    def stereo(self, ):
+    def stereo(self,):
         """ access the Stereo (CT1-4) schedule plane """
-        return self._schedules['stereo']
+        return self._schedules["stereo"]
 
     def schedule(self, targets):
         """
@@ -178,10 +176,12 @@ class HESSIIScheduler(Scheduler):
                 self.hybrid.maskUnavailable(mask)
 
             else:
-                log.warning("!!! Target {} has an unknown subarray '{}' and "
-                            "could not be scheduled !!!"
-                            .format(targ.Target_Name,
-                                    targ.Subarray_Accepted))
+                log.warning(
+                    "!!! Target {} has an unknown subarray '{}' and "
+                    "could not be scheduled !!!".format(
+                        targ.Target_Name, targ.Subarray_Accepted
+                    )
+                )
 
 
 def save_schedule(schedule, filename):

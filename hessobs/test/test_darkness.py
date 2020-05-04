@@ -2,9 +2,10 @@ from hessobs.darkness import Darkness
 from hessobs.targets import Target
 import pkg_resources
 
+
 def test_schedule():
 
-    filename = pkg_resources.resource_filename('hessobs','test/darkness2017.dat')
+    filename = pkg_resources.resource_filename("hessobs", "test/darkness2017.dat")
     dark = Darkness(filename)
 
     total, effcorrected = dark.hoursOfFreeDarkTime()
@@ -12,11 +13,9 @@ def test_schedule():
 
     dark.generateZenithAngleMapByTarget()
 
-    targ = Target(Target_Name="Test", RA_2000=17.5, Dec_2000=-29,
-                  Hours_Accepted=100)
+    targ = Target(Target_Name="Test", RA_2000=17.5, Dec_2000=-29, Hours_Accepted=100)
 
-    targ2 = Target(Target_Name="Test2", RA_2000=10.5, Dec_2000=-29,
-                   Hours_Accepted=50)
+    targ2 = Target(Target_Name="Test2", RA_2000=10.5, Dec_2000=-29, Hours_Accepted=50)
 
     dark.fillTarget(targ)
     dark.fillTarget(targ2)
@@ -32,4 +31,4 @@ def test_schedule():
 
     dark.printSummary()
     dark.printSchedule(5)
-    assert dark.periodName(3) == '2017-03'
+    assert dark.periodName(3) == "2017-03"

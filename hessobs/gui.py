@@ -8,7 +8,6 @@ from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3 as Navigatio
 
 
 class ScheduleOverviewWindow(Gtk.Window):
-
     def __init__(self, schedule):
         Gtk.Window.__init__(self)
         self.resize(1124, 640)
@@ -28,10 +27,8 @@ class ScheduleOverviewWindow(Gtk.Window):
             canvas = FigureCanvas(fig)
             toolbar = NavigationToolbar(canvas, self)
 
-            canvas.mpl_connect("motion_notify_event",
-                               self.on_motion)
-            canvas.mpl_connect("button_press_event",
-                               self.on_click)
+            canvas.mpl_connect("motion_notify_event", self.on_motion)
+            canvas.mpl_connect("button_press_event", self.on_click)
 
             self._figures[name] = fig
 

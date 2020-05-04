@@ -7,6 +7,7 @@ def test_custom_target():
     assert t.Target_Name == "bob"
     assert t.Hours_Accepted == 0
 
+
 def test_target_from_name():
 
     t = Target.from_name("Crab")

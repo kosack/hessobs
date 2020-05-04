@@ -30,14 +30,15 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 try:
-    import seaborn              # nicer plot defaults
+    import seaborn  # nicer plot defaults
+
     pal = seaborn.color_palette("Paired", 25)
     seaborn.set_palette(pal)
 except ImportError:
     pass
 plt.style.use("seaborn-dark")
 
-logger = logging.getLogger('obs-summary')
+logger = logging.getLogger("obs-summary")
 
 # ======================================================================
 # Global parameters:
@@ -45,9 +46,9 @@ logger = logging.getLogger('obs-summary')
 # Any extra target_prefix -> group mappings that are not automatically
 # loaded from the database.  These supercede database target groups.
 EXTRA_TARGET_MAP = {
-    'GRB': 'GRBs',
-    'FakeGRB': 'Fake GRBs',
-    'PKS 2155-304_off': 'PKS 2155-304 Offs/Zen Scan'
+    "GRB": "GRBs",
+    "FakeGRB": "Fake GRBs",
+    "PKS 2155-304_off": "PKS 2155-304 Offs/Zen Scan",
 }
 
 MIN_DURATION = 10.0  # minimum run duration to consider, in minutes
@@ -89,24 +90,26 @@ def _get_target_group_for_target(targetname, target_map):
 def _load_target_map_from_db():
     """ return a mapping of name -> group from the database """
     targetmap = {}
-    query = ('SELECT Name,TargetGroup FROM AutoSched_Target AS T '
-             'LEFT JOIN AutoSched_Target_Set AS S ON T.SetNum=S.SetNum;')
-    
+    query = (
+        "SELECT Name,TargetGroup FROM AutoSched_Target AS T "
+        "LEFT JOIN AutoSched_Target_Set AS S ON T.SetNum=S.SetNum;"
+    )
+
     results = hessdb.execute(query, "hess", "HESS_AutoSched")
 
     for row in results:
-        group = row['TargetGroup']
+        group = row["TargetGroup"]
 
         # do some remappings first (to group some groups!):
-        if group.startswith('GalacticScan'):
-            group = 'GalacticScan'
-        if group.startswith('Galactic Center'):
-            group = 'Galactic Center'
-        if group.find('Crab') > 0:
-            group = 'Crab Nebula'
+        if group.startswith("GalacticScan"):
+            group = "GalacticScan"
+        if group.startswith("Galactic Center"):
+            group = "Galactic Center"
+        if group.find("Crab") > 0:
+            group = "Crab Nebula"
 
         # assign the target to the group:
-        targetmap[row['Name']] = group
+        targetmap[row["Name"]] = group
 
     return targetmap
 
@@ -119,15 +122,15 @@ def group_by_target(data):
     target_map = _load_target_map_from_db()
     groups = [_get_target_group_for_target(t, target_map) for t in data.index]
     data = data.copy()
-    data['GROUP'] = groups
-    return data.groupby('GROUP').sum()
+    data["GROUP"] = groups
+    return data.groupby("GROUP").sum()
 
 
 def calc_positions(info):
-    rastr = info['Drive_Target_Ra2000']
-    decstr = info['Drive_Target_Dec2000']
-    wobx = info['Drive_Wobble_Offset_Ra']
-    woby = info['Drive_Wobble_Offset_Dec']
+    rastr = info["Drive_Target_Ra2000"]
+    decstr = info["Drive_Target_Dec2000"]
+    wobx = info["Drive_Wobble_Offset_Ra"]
+    woby = info["Drive_Wobble_Offset_Dec"]
 
     tra = c.Angle(rastr)
     tdec = c.Angle(decstr)
@@ -138,13 +141,13 @@ def calc_positions(info):
     lon = c.Angle(tra + wobx)
     lat[lat < -90 * u.deg] = -89.9999 * u.deg
 
-    obspos = c.SkyCoord(lon, lat, frame='icrs')
+    obspos = c.SkyCoord(lon, lat, frame="icrs")
     galpos = obspos.galactic
 
-    info['OBS_POS_RA'] = obspos.ra.deg
-    info['OBS_POS_DEC'] = obspos.dec.deg
-    info['OBS_POS_L'] = galpos.l.deg
-    info['OBS_POS_B'] = galpos.b.deg
+    info["OBS_POS_RA"] = obspos.ra.deg
+    info["OBS_POS_DEC"] = obspos.dec.deg
+    info["OBS_POS_L"] = galpos.l.deg
+    info["OBS_POS_B"] = galpos.b.deg
     return info
 
 
@@ -154,8 +157,8 @@ def make_fov_plot(info):
     info -- dataframe of runinfo
     """
 
-    obs_l = info['OBS_POS_L'].astype(float)
-    obs_b = info['OBS_POS_B'].astype(float)
+    obs_l = info["OBS_POS_L"].astype(float)
+    obs_b = info["OBS_POS_B"].astype(float)
     obs_l[obs_l >= 180] -= 360.0
 
     fig = plt.figure(figsize=(14, 7))
@@ -167,8 +170,7 @@ def make_fov_plot(info):
 
     fovstretch = np.cos(np.radians(obs_b))
     positions = zip(obs_l, obs_b, fovstretch)
-    fovs = [Ellipse(xy=(P[0], P[1]), width=5.0, height=5.0 * P[2])
-            for P in positions]
+    fovs = [Ellipse(xy=(P[0], P[1]), width=5.0, height=5.0 * P[2]) for P in positions]
 
     for fov in fovs:
         ax.add_patch(fov)
@@ -181,8 +183,11 @@ def make_fov_plot(info):
     ax.set_xlim(-180, 180)
     ax.set_ylim(-90, 90)
 
-    plt.title("Target Summary for runs {0} ({2}) to {1} ({3})"
-              .format(firstrun, lastrun, d0, d1))
+    plt.title(
+        "Target Summary for runs {0} ({2}) to {1} ({3})".format(
+            firstrun, lastrun, d0, d1
+        )
+    )
     plt.xlabel("GAL L (deg)")
     plt.ylabel("GAL B (deg)")
 
@@ -203,49 +208,50 @@ def get_observation_run_info(firstrun, lastrun):
       AND S.RunNumber<={1:d}
       AND S.RunType LIKE '%ObservationRun';
     """
-    oresults = hessdb.execute(query.format(firstrun, lastrun),
-                                     "hess", "HESS_History")
+    oresults = hessdb.execute(query.format(firstrun, lastrun), "hess", "HESS_History")
     runs = []
     duration = dict()
     startdate = None
     enddate = None
     for oresult in oresults:
-        if oresult['TimeOfStart'] is None:
+        if oresult["TimeOfStart"] is None:
             continue
-        if oresult['TimeOfEnd'] is None:
+        if oresult["TimeOfEnd"] is None:
             continue
 
         if startdate is None:
-            startdate = oresult['TimeOfStart']
+            startdate = oresult["TimeOfStart"]
 
-        enddate = oresult['TimeOfEnd']
-        dur = (oresult['TimeOfEnd'] - oresult['TimeOfStart']).seconds / 60.0
+        enddate = oresult["TimeOfEnd"]
+        dur = (oresult["TimeOfEnd"] - oresult["TimeOfStart"]).seconds / 60.0
         if dur > MIN_DURATION:
-            runs.append(oresult['RunNumber'])
-            duration[oresult['RunNumber']] = dur
+            runs.append(oresult["RunNumber"])
+            duration[oresult["RunNumber"]] = dur
 
-    lastrun = oresult['RunNumber']
+    lastrun = oresult["RunNumber"]
     return runs, duration, startdate, enddate, lastrun
 
 
 def _reformat_radec(runinfo, run):
     try:
-        rastr = runinfo[run]['Drive_Target_Ra2000']
-        decstr = runinfo[run]['Drive_Target_Dec2000']
+        rastr = runinfo[run]["Drive_Target_Ra2000"]
+        decstr = runinfo[run]["Drive_Target_Dec2000"]
         decstr = decstr.replace("''", '"')
         # some targets have pos in degrees, with no unit attached.
         # Need to append a "d" if they are not in HMS/DMS notation
-        if 'h' not in rastr:
+        if "h" not in rastr:
             rastr = rastr + "d"
-        if 'd' not in decstr:
+        if "d" not in decstr:
             decstr = decstr + "d"
 
-        runinfo[run]['Drive_Target_Ra2000'] = rastr
-        runinfo[run]['Drive_Target_Dec2000'] = decstr
-        runinfo[run]['Drive_Wobble_Offset_Ra'] = float(
-            runinfo[run]['Drive_Wobble_Offset_Ra'])
-        runinfo[run]['Drive_Wobble_Offset_Dec'] = float(
-            runinfo[run]['Drive_Wobble_Offset_Dec'])
+        runinfo[run]["Drive_Target_Ra2000"] = rastr
+        runinfo[run]["Drive_Target_Dec2000"] = decstr
+        runinfo[run]["Drive_Wobble_Offset_Ra"] = float(
+            runinfo[run]["Drive_Wobble_Offset_Ra"]
+        )
+        runinfo[run]["Drive_Wobble_Offset_Dec"] = float(
+            runinfo[run]["Drive_Wobble_Offset_Dec"]
+        )
     except KeyError:
         pass
 
@@ -257,15 +263,15 @@ def get_top_n(data, num=20):
     """
     # make a total column to sort by
     tmp = data.copy()
-    tmp['xtotal'] = data.T.sum()
-    tmp.sort_values('xtotal', ascending=False, inplace=True)
+    tmp["xtotal"] = data.T.sum()
+    tmp.sort_values("xtotal", ascending=False, inplace=True)
 
     # return only the top n values:
-    del tmp['xtotal']
+    del tmp["xtotal"]
     return tmp[:num]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # ==============================================================
     # parse command-line arguments
@@ -274,23 +280,34 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.epilog = "\n".join(
-        ['examples:',
-         '    hessobs-summary.py year 2015',
-         '    hessobs-summary.py period P2015-02',
-         '    hessobs-summary.py runs 102695 104843']
+        [
+            "examples:",
+            "    hessobs-summary.py year 2015",
+            "    hessobs-summary.py period P2015-02",
+            "    hessobs-summary.py runs 102695 104843",
+        ]
     )
     parser.formatter_class = argparse.RawDescriptionHelpFormatter
-    parser.description = "Generate list of observations and related " \
-                         + "summary plots for a given time period"
-    parser.add_argument("command", metavar="COMMAND",
-                        help='runs <first> <last>, period <name>, year <year>')
+    parser.description = (
+        "Generate list of observations and related "
+        + "summary plots for a given time period"
+    )
+    parser.add_argument(
+        "command",
+        metavar="COMMAND",
+        help="runs <first> <last>, period <name>, year <year>",
+    )
     parser.add_argument("params", metavar="PARAM", nargs="*")
-    parser.add_argument("-f", "--full-subarray", action='store_true',
-                        help="categorize by full subarray name")
-    parser.add_argument('-t', '--tag', help='output tag to prepend to files',
-                        default='')
-    parser.add_argument('-n', '--no-plots', action='store_true',
-                        help="don't plot data")
+    parser.add_argument(
+        "-f",
+        "--full-subarray",
+        action="store_true",
+        help="categorize by full subarray name",
+    )
+    parser.add_argument(
+        "-t", "--tag", help="output tag to prepend to files", default=""
+    )
+    parser.add_argument("-n", "--no-plots", action="store_true", help="don't plot data")
 
     args = parser.parse_args()
 
@@ -312,13 +329,17 @@ if __name__ == '__main__':
 
     logger.info("Gathering runlist...")
 
-    runs, duration, start, end, lastrun = get_observation_run_info(firstrun,
-                                                                   lastrun)
-    logger.info("  * {0} ObservationRuns found in range {1}-{2}"
-                .format(len(runs), firstrun, lastrun))
-    logger.info("  * Date Range: {0} to {1}"
-                .format(start.strftime("%Y-%m-%d"),
-                        end.strftime("%Y-%m-%d")))
+    runs, duration, start, end, lastrun = get_observation_run_info(firstrun, lastrun)
+    logger.info(
+        "  * {0} ObservationRuns found in range {1}-{2}".format(
+            len(runs), firstrun, lastrun
+        )
+    )
+    logger.info(
+        "  * Date Range: {0} to {1}".format(
+            start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+        )
+    )
 
     # ============================================================
     # look up run information:
@@ -328,19 +349,23 @@ if __name__ == '__main__':
     logger.info("")
 
     # speed up query by restricting to only some parameters:
-    required_parameters = ['Drive_Target_FixedAlt',
-                           'Drive_Target_Name',
-                           'Drive_Target_Dec2000',
-                           'Drive_Target_Ra2000',
-                           'Camera2_Acq',
-                           'Drive_Wobble_Offset_Ra',
-                           'Drive_Wobble_Offset_Dec',
-                           'DAQ_TelescopeList']
+    required_parameters = [
+        "Drive_Target_FixedAlt",
+        "Drive_Target_Name",
+        "Drive_Target_Dec2000",
+        "Drive_Target_Ra2000",
+        "Camera2_Acq",
+        "Drive_Wobble_Offset_Ra",
+        "Drive_Wobble_Offset_Dec",
+        "DAQ_TelescopeList",
+    ]
     query = """
     SELECT RunNumber,Parameter,Value FROM Produced_RunParameters
     WHERE RunNumber in ({0}) and Parameter in ({1});
-    """.format(",".join([str(x) for x in runs]),
-               ",".join(["'" + x + "'" for x in required_parameters]))
+    """.format(
+        ",".join([str(x) for x in runs]),
+        ",".join(["'" + x + "'" for x in required_parameters]),
+    )
 
     results = hessdb.execute(query, "hess", "HESS_History")
 
@@ -351,8 +376,8 @@ if __name__ == '__main__':
     runinfo = defaultdict(dict)
 
     for result in results:
-        run = result['RunNumber']
-        runinfo[run][result['Parameter']] = result['Value']
+        run = result["RunNumber"]
+        runinfo[run][result["Parameter"]] = result["Value"]
 
     # ============================================================
     # now collect the information by target name:
@@ -364,40 +389,43 @@ if __name__ == '__main__':
     offset = defaultdict(set)
     for run in runinfo:
         if args.full_subarray:
-            tels = _get_subarray_name(runinfo[run]['DAQ_TelescopeList'])
+            tels = _get_subarray_name(runinfo[run]["DAQ_TelescopeList"])
         else:
-            tels = _get_subarray_group_name(runinfo[run]['DAQ_TelescopeList'])
+            tels = _get_subarray_group_name(runinfo[run]["DAQ_TelescopeList"])
 
-        if 'Drive_Target_Name' in runinfo[run]:
-            targ = runinfo[run]['Drive_Target_Name']
+        if "Drive_Target_Name" in runinfo[run]:
+            targ = runinfo[run]["Drive_Target_Name"]
         else:
             targ = "Unknown"
 
-        runinfo[run]['MODE'] = "Charge"
+        runinfo[run]["MODE"] = "Charge"
         offs = 0
 
         # sample mode has a different acq mode
         if "Camera2_Acq" in runinfo[run]:
-            runinfo[run]['MODE'] = runinfo[run]['Camera2_Acq']
+            runinfo[run]["MODE"] = runinfo[run]["Camera2_Acq"]
 
         # drift scans have fixed alt
-        if 'Drive_Target_FixedAlt' in runinfo[run]:
-            runinfo[run]['MODE'] = "Drift"
+        if "Drive_Target_FixedAlt" in runinfo[run]:
+            runinfo[run]["MODE"] = "Drift"
 
         try:
             _reformat_radec(runinfo, run)
             time_per_target[targ][tels] += duration[run]
         except Exception as e:
-            logger.warning("*** COULDN't process run {0} because {1}: {2} "
-                           .format(run, str(e), runinfo[run]))
+            logger.warning(
+                "*** COULDN't process run {0} because {1}: {2} ".format(
+                    run, str(e), runinfo[run]
+                )
+            )
 
     # ======================================================================
     # Use Pandas to manipulate the resulting data
     # ======================================================================
 
     logger.info("Building DataFrame...")
-    fmt = lambda x: '{0:3.1f}'.format(x) if pd.notnull(x) else '-'
-    webfmt = lambda x: '{0:3.1f}'.format(x) if pd.notnull(x) else ''
+    fmt = lambda x: "{0:3.1f}".format(x) if pd.notnull(x) else "-"
+    webfmt = lambda x: "{0:3.1f}".format(x) if pd.notnull(x) else ""
 
     data = pd.DataFrame(time_per_target) / 60.0
 
@@ -415,8 +443,11 @@ if __name__ == '__main__':
         # re-grouped/remapped target summary
         logger.info("   -> group summary")
         gdata.plot(kind="bar", stacked=True, figsize=(14, 8))
-        plt.title("Grouped Target Summary for runs {0} ({2}) to {1} ({3})"
-                  .format(firstrun, lastrun, d0, d1))
+        plt.title(
+            "Grouped Target Summary for runs {0} ({2}) to {1} ({3})".format(
+                firstrun, lastrun, d0, d1
+            )
+        )
         plt.ylabel("Hours")
         plt.grid(True)
         plt.tight_layout()
@@ -425,12 +456,15 @@ if __name__ == '__main__':
         # full target summary
         logger.info("   -> target summary")
         mask = data.T.index.str.startswith("FakeGRB")
-        data = data.T[~mask].T        # remove "FakeGRB" targets
+        data = data.T[~mask].T  # remove "FakeGRB" targets
 
         data.T.plot(kind="bar", stacked=True, figsize=(14, 8))
         plt.ylabel("Hours")
-        plt.title("Target Summary for runs {0} ({2}) to {1} ({3})"
-                  .format(firstrun, lastrun, d0, d1))
+        plt.title(
+            "Target Summary for runs {0} ({2}) to {1} ({3})".format(
+                firstrun, lastrun, d0, d1
+            )
+        )
         plt.grid(True)
         plt.tight_layout()
         plt.savefig("{}summary.png".format(args.tag))
@@ -438,30 +472,36 @@ if __name__ == '__main__':
         # subarray summary
         logger.info("   -> subarray summary")
         plt.figure()
-        plt.grid(True, axis='both')
+        plt.grid(True, axis="both")
         data.T.sum().plot(kind="bar")
-        plt.title("Subarray Summary for runs {0} ({2}) to {1} ({3})"
-                  .format(firstrun, lastrun, d0, d1))
+        plt.title(
+            "Subarray Summary for runs {0} ({2}) to {1} ({3})".format(
+                firstrun, lastrun, d0, d1
+            )
+        )
         plt.tight_layout()
         plt.savefig("{}subarray_bar.png".format(args.tag))
 
         # top-n plot:
         logger.info("   -> sorted (top N) summary")
         plt.figure()
-        plt.grid(True, axis='both')
-        get_top_n(gdata, num=20).plot(kind='bar', stacked=True)
-        plt.title("Top 20 Source for Runs {0} ({2}) to {1} ({3})"
-                  .format(firstrun, lastrun, d0, d1))
+        plt.grid(True, axis="both")
+        get_top_n(gdata, num=20).plot(kind="bar", stacked=True)
+        plt.title(
+            "Top 20 Source for Runs {0} ({2}) to {1} ({3})".format(
+                firstrun, lastrun, d0, d1
+            )
+        )
         plt.tight_layout()
-        plt.savefig('{}top_20.png'.format(args.tag))
+        plt.savefig("{}top_20.png".format(args.tag))
 
     # ============================================================
     # Display the results table in full:
     # ============================================================
 
     summary = data.sort_index(ascending=False)
-    summary.loc['TOTAL/TARG'] = summary.sum()  # add total/target column
-    summary['TOTAL'] = summary.T.sum()         # add total row
+    summary.loc["TOTAL/TARG"] = summary.sum()  # add total/target column
+    summary["TOTAL"] = summary.T.sum()  # add total row
 
     # print it to the console
     print("-" * 80)
@@ -473,14 +513,17 @@ if __name__ == '__main__':
     with open("{}summary.html".format(args.tag), "w") as outfile:
         outfile.write("<html><head>\n")
         outfile.write("<title>Run Summary</title>\n")
-        outfile.write(
-            '<link rel="stylesheet" type="text/css" href="hess.css">')
+        outfile.write('<link rel="stylesheet" type="text/css" href="hess.css">')
         outfile.write("</head>")
         outfile.write("<body>\n")
-        outfile.write("<h1>Summary for runs {first} to {last} </h1>"
-                      .format(first=firstrun, last=lastrun))
-        outfile.write('<div align="center"><b>Dates:</b> {d0} to {d1}</div>'
-                      .format(d0=d0, d1=d1))
+        outfile.write(
+            "<h1>Summary for runs {first} to {last} </h1>".format(
+                first=firstrun, last=lastrun
+            )
+        )
+        outfile.write(
+            '<div align="center"><b>Dates:</b> {d0} to {d1}</div>'.format(d0=d0, d1=d1)
+        )
         outfile.write("<h2> Hours per Target </h2>")
         summary.T.to_html(outfile, float_format=webfmt)
         outfile.write("</body>\n")

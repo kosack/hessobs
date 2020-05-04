@@ -16,15 +16,16 @@ def print_header(targ):
     - `targ`:
     """
 
-    wrap = textwrap.TextWrapper(initial_indent="",
-                                subsequent_indent="",
-                                width=70,
-                                break_on_hyphens=False,
-                                break_long_words=False
-                                )
+    wrap = textwrap.TextWrapper(
+        initial_indent="",
+        subsequent_indent="",
+        width=70,
+        break_on_hyphens=False,
+        break_long_words=False,
+    )
 
     print("======================================")
-    print(targ['Contact_Email'])
+    print(targ["Contact_Email"])
     print("")
     print("Your HESS Proposal Has Been Submitted")
     print("")
@@ -59,92 +60,107 @@ def check_pos(targ):
     - `targ`:
     """
 
-    if targ['RA_2000'] == -1:
-        print (" - No targets given (e.g. TOO)")
+    if targ["RA_2000"] == -1:
+        print(" - No targets given (e.g. TOO)")
         return
-    
-    proppos = SkyCoord(ra=float(targ['RA_2000']) * u.hour,
-                       dec=float(targ['Dec_2000']) * u.deg)
+
+    proppos = SkyCoord(
+        ra=float(targ["RA_2000"]) * u.hour, dec=float(targ["Dec_2000"]) * u.deg
+    )
 
     try:
         name = targ["Target_Name"]
-        if name.find(':') > 0:  # strip off any extra info
-            name = name[:name.find(':')]
-        if name.find('_') > 0:  # strip off any extra info
-            name = name[:name.find('_')]
+        if name.find(":") > 0:  # strip off any extra info
+            name = name[: name.find(":")]
+        if name.find("_") > 0:  # strip off any extra info
+            name = name[: name.find("_")]
 
-#        name = name.strip()
+        #        name = name.strip()
         pos = SkyCoord.from_name(name)
-        delta = coordinates.ang_sep_deg(pos.ra.degree,
-                                        pos.dec.degree,
-                                        proppos.ra.degree,
-                                        proppos.dec.degree)
-        if (delta > 0.2):
-            print(" - WARNING: Coordinates differ from Simbad by {0:.2f} deg."
-                  .format(delta), "Please check!")
-            print("   SESAME -> ",
-                  pos.to_string('hmsdms'))
+        delta = coordinates.ang_sep_deg(
+            pos.ra.degree, pos.dec.degree, proppos.ra.degree, proppos.dec.degree
+        )
+        if delta > 0.2:
+            print(
+                " - WARNING: Coordinates differ from Simbad by {0:.2f} deg.".format(
+                    delta
+                ),
+                "Please check!",
+            )
+            print("   SESAME -> ", pos.to_string("hmsdms"))
 
-            print("     PROP -> ",
-                  proppos.to_string('hmsdms'))
+            print("     PROP -> ", proppos.to_string("hmsdms"))
         else:
             print(" - Coordinates: VERIFIED (via SESAME name resolver)")
     except NameResolveError:
-        print(" - WARNING: Couldn't resolve coordinates for '{0}'.".format(name),
-              "Please make sure you check them!".format(name))
+        print(
+            " - WARNING: Couldn't resolve coordinates for '{0}'.".format(name),
+            "Please make sure you check them!".format(name),
+        )
         print("   SESAME -> couldn't resolve name")
-        print("     PROP -> ",
-              proppos.to_string('hmsdms'))
+        print("     PROP -> ", proppos.to_string("hmsdms"))
 
 
 def check_quality(targ):
-    if targ['Required_Data_Quality'] == "high":
+    if targ["Required_Data_Quality"] == "high":
         print(" - Requested only high-data-quality observations")
 
 
 def check_frequency(targ):
-    if targ['Scheduling_Frequency'] > 1:
-        print(" - Monitor every", targ['Scheduling_Frequency'], "nights")
+    if targ["Scheduling_Frequency"] > 1:
+        print(" - Monitor every", targ["Scheduling_Frequency"], "nights")
 
 
 def check_zenith(targ):
-    wrap = textwrap.TextWrapper(initial_indent="",
-                                subsequent_indent=" " * 10,
-                                width=70)
+    wrap = textwrap.TextWrapper(initial_indent="", subsequent_indent=" " * 10, width=70)
 
-    if targ['Zenith_Max'] >= 49.99999999999:
+    if targ["Zenith_Max"] >= 49.99999999999:
         print(" - Large Zenith Angle observations are allowed")
-    if targ['Zenith_Max'] > 55:
-        print(wrap.fill(" ".join(
-            [" - WARNING: Zenith angles >55 deg may be scheduled.",
-             "Do you really want that?  The energy threshold may be ",
-             "very high, extra simulations may be needed, ",
-             "and CT5 may be in the field of view."])))
-    if targ['Scheduling_Preference'] == 'zenith':
+    if targ["Zenith_Max"] > 55:
+        print(
+            wrap.fill(
+                " ".join(
+                    [
+                        " - WARNING: Zenith angles >55 deg may be scheduled.",
+                        "Do you really want that?  The energy threshold may be ",
+                        "very high, extra simulations may be needed, ",
+                        "and CT5 may be in the field of view.",
+                    ]
+                )
+            )
+        )
+    if targ["Scheduling_Preference"] == "zenith":
         print(" - Prefer small-zenith angles when scheduling")
-    if targ['Scheduling_Preference'] == 'time':
-        print(" - Prefer quick observations with larger zenith",
-              "spread when scheduling")
+    if targ["Scheduling_Preference"] == "time":
+        print(
+            " - Prefer quick observations with larger zenith", "spread when scheduling"
+        )
 
 
 def check_wobble(targ):
-    if targ['Observation_Mode'] == 'wobble':
-        offs = targ['Wobble_Offset']
-        if targ['Extension'] == "extended" and offs <= 0.5001:
-            print(" - WARNING: requested {0} deg wobble for",
-                  " an extended source".format(offs))
+    if targ["Observation_Mode"] == "wobble":
+        offs = targ["Wobble_Offset"]
+        if targ["Extension"] == "extended" and offs <= 0.5001:
+            print(
+                " - WARNING: requested {0} deg wobble for",
+                " an extended source".format(offs),
+            )
         if (offs - 0.7) > 1e-10:
-            print(" - WARNING: requested non-standard wobble offset of {} deg"
-                  .format(offs))
+            print(
+                " - WARNING: requested non-standard wobble offset of {} deg".format(
+                    offs
+                )
+            )
 
 
 def check_dates(targ):
-    if targ['Start_Date'] != None:
-        print(" - Starting date: ", targ['Start_Date'])
-    if targ['End_Date'] != None:
-        print(" - Ending date: ", targ['End_Date'])
+    if targ["Start_Date"] != None:
+        print(" - Starting date: ", targ["Start_Date"])
+    if targ["End_Date"] != None:
+        print(" - Ending date: ", targ["End_Date"])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Verifies the parameters of a proposal and generates a resport to")
@@ -160,13 +176,11 @@ if __name__ == '__main__':
 
     where = "Year={0} AND Seqno={1} AND Revision={2}".format(year, seq, rev)
 
-    targets = targets.load_targets_from_db(where=where,
-                                           fallbackfile=None,
-                                           normalize=False)
+    targets = targets.load_targets_from_db(
+        where=where, fallbackfile=None, normalize=False
+    )
 
-    wrap = textwrap.TextWrapper(initial_indent="",
-                                subsequent_indent=" " * 35,
-                                width=70)
+    wrap = textwrap.TextWrapper(initial_indent="", subsequent_indent=" " * 35, width=70)
 
     firsttarg = 1
     for targ in targets:
@@ -175,22 +189,27 @@ if __name__ == '__main__':
             firsttarg = 0
 
         print("-" * 50)
-        print(targ['Target_Name'])
-        if (targ['Hours_Requested']):
-            print(" - Requested {0:.1f} hrs {1} {2}"
-                  .format(targ['Hours_Requested'],
-                          targ['Observation_Strategy'],
-                          targ['Observation_Mode']))
+        print(targ["Target_Name"])
+        if targ["Hours_Requested"]:
+            print(
+                " - Requested {0:.1f} hrs {1} {2}".format(
+                    targ["Hours_Requested"],
+                    targ["Observation_Strategy"],
+                    targ["Observation_Mode"],
+                )
+            )
         else:
             print(" - NO HOURS WERE REQUESTED!")
 
-        print(" - Ideal SubArray: ", targ['Subarray_Requested_1'])
-        if targ['Subarray_Requested_2'] is not None:
-            print("        with fallback to: ",  targ['Subarray_Requested_2'])
-        if targ['Subarray_Requested_3'] is not None:
-            print("        or at worst: ",  targ['Subarray_Requested_3'])
-        if (targ['Subarray_Requested_3'] is None
-                and targ['Subarray_Requested_2'] is None):
+        print(" - Ideal SubArray: ", targ["Subarray_Requested_1"])
+        if targ["Subarray_Requested_2"] is not None:
+            print("        with fallback to: ", targ["Subarray_Requested_2"])
+        if targ["Subarray_Requested_3"] is not None:
+            print("        or at worst: ", targ["Subarray_Requested_3"])
+        if (
+            targ["Subarray_Requested_3"] is None
+            and targ["Subarray_Requested_2"] is None
+        ):
             print("        with no other subarray allowed.")
 
         check_pos(targ)
@@ -200,5 +219,5 @@ if __name__ == '__main__':
         check_dates(targ)
         check_frequency(targ)
 
-        if targ['Special_Requests'] != "":
-            print(" - NOTE:", targ['Special_Requests'])
+        if targ["Special_Requests"] != "":
+            print(" - NOTE:", targ["Special_Requests"])

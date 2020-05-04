@@ -30,10 +30,11 @@ from . import config
 from .targets import _set_target_defaults, target_list_to_dict
 from . import coordinates
 
-__all__ = ['Darkness', 'load_dark', 'save_dark']
+__all__ = ["Darkness", "load_dark", "save_dark"]
 colorama.init()
 
 log = logging.getLogger(__name__)
+
 
 def transit_ra(jd, utctime):
     """
@@ -86,11 +87,14 @@ class Darkness(object):
     RESERVED = 1  # reserved space
     MIN_TIME_PER_PERIOD = 1.0
 
-    def __init__(self, darkness_filename,
-                 startdate=datetime.datetime(2011, 0o1, 21),
-                 binsperhour=config.BINS_PER_HOUR,
-                 efficiencies=config.DEFAULT_MONTH_EFFICIENCIES,
-                 name="dark"):
+    def __init__(
+        self,
+        darkness_filename,
+        startdate=datetime.datetime(2011, 0o1, 21),
+        binsperhour=config.BINS_PER_HOUR,
+        efficiencies=config.DEFAULT_MONTH_EFFICIENCIES,
+        name="dark",
+    ):
 
         self._name = name
         self._bins_per_hour = binsperhour
@@ -117,8 +121,7 @@ class Darkness(object):
         # Read the darkness table from a file
         # ==================================================
         for line in infile:
-            (year, month, day, jd,
-             utc_start, utc_end) = re.split("[ \t]+", line)
+            (year, month, day, jd, utc_start, utc_end) = re.split("[ \t]+", line)
 
             year = int(year)
 
@@ -126,21 +129,21 @@ class Darkness(object):
 
             # print line
 
-            if (date < startdate):
+            if date < startdate:
                 continue
 
-            if (year > curyear and curyear == 0):
+            if year > curyear and curyear == 0:
                 curyear = year
                 curperiod = 1
 
-            if (abs(float(utc_start)) > 1e-10):
+            if abs(float(utc_start)) > 1e-10:
                 dates.append(date)
                 periods.append("{0}-{1:02d}".format(curyear, curperiod))
                 jds.append(int(jd))
                 utc_starts.append(float(utc_start))
                 utc_ends.append(float(utc_end))
 
-            elif (abs(float(prevstart)) > 1e-10):
+            elif abs(float(prevstart)) > 1e-10:
                 # jump to next period
                 curperiod += 1
 
@@ -155,8 +158,13 @@ class Darkness(object):
         self.utc_starts = np.array(utc_starts)
         self.utc_ends = np.array(utc_ends)
 
-        (self.map_dates, self.map_fdates, self.map_jds,
-         self.map_utcs, self.map) = self._initDarknessMap()
+        (
+            self.map_dates,
+            self.map_fdates,
+            self.map_jds,
+            self.map_utcs,
+            self.map,
+        ) = self._initDarknessMap()
 
         jd, utc = self.date_time_map
         ramap = transit_ra(jd, utc)
@@ -171,7 +179,7 @@ class Darkness(object):
 
     @property
     def boolmap(self):
-        return (self.map > (Darkness.UNAVAILABLE + 1e-10))
+        return self.map > (Darkness.UNAVAILABLE + 1e-10)
 
     @property
     def target_step(self):
@@ -208,7 +216,7 @@ class Darkness(object):
             log.debug("target {} already exists, incrementing target_id")
             return self._addTarget(target_id + 1, targetinfo)
         else:
-            targetinfo['INDEX'] = target_id
+            targetinfo["INDEX"] = target_id
             self.targets[target_id] = targetinfo
             return target_id
 
@@ -218,7 +226,7 @@ class Darkness(object):
             self._zenithMap = self.generateZenithAngleMapByTarget()
         return self._zenithMap
 
-    def clear(self, ):
+    def clear(self,):
         """
         clear the filled schedule
         """
@@ -234,7 +242,7 @@ class Darkness(object):
         """
         return np.mod(target_id, self.target_step) > 0
 
-    def newColorMap(self, ):
+    def newColorMap(self,):
         """ generate a new colormap next time the schedule is drawn """
         self._cmap = None
         cmfilename = "cmap-{0}.dat".format(self._name.replace(" ", "_"))
@@ -273,8 +281,9 @@ class Darkness(object):
                     cmfile.close()
 
             if cmapsize > 0:
-                self._cmap = LinearSegmentedColormap.from_list("rands",
-                                                               list(zip(r, g, b)))
+                self._cmap = LinearSegmentedColormap.from_list(
+                    "rands", list(zip(r, g, b))
+                )
         return self._cmap
 
     @property
@@ -286,7 +295,7 @@ class Darkness(object):
 
     def getDateRangeForPeriod(self, period):
 
-        mask = (self.periods == period)
+        mask = self.periods == period
         dates = self.dates[mask]
         return (dates[0], dates[-1])
 
@@ -307,35 +316,32 @@ class Darkness(object):
         jds = self.jds
         jdmin = jds[0]
         jdmax = jds[-1]
-        nbins_date = (jdmax - jdmin)
+        nbins_date = jdmax - jdmin
 
         map_jds = np.arange(jdmin, jdmax)
         d0 = self.dates[0]
-        map_dates = [d0 + datetime.timedelta(days=x)
-                     for x in range(nbins_date)]
+        map_dates = [d0 + datetime.timedelta(days=x) for x in range(nbins_date)]
 
         map_fdates = np.array([date2num(x) for x in map_dates])
 
         range_utc = (-6.5, 5.5)
         nbins_utc = int((range_utc[1] - range_utc[0]) * self._bins_per_hour)
 
-        self._hours_per_map_bin = (range_utc[1] -
-                                   range_utc[0]) / float(nbins_utc)
+        self._hours_per_map_bin = (range_utc[1] - range_utc[0]) / float(nbins_utc)
 
         utc_starts = self.utc_starts
         utc_ends = self.utc_ends
 
         map_utcs = np.linspace(range_utc[0], range_utc[1], nbins_utc)
-        schedmap = np.zeros((nbins_date, nbins_utc), dtype='I')
+        schedmap = np.zeros((nbins_date, nbins_utc), dtype="I")
 
         for jd, start, end in zip(jds, utc_starts, utc_ends):
             iday = jd - jdmin
-            if (iday < nbins_date):
+            if iday < nbins_date:
                 rowmask = np.logical_and(map_utcs > start, map_utcs < end)
                 schedmap[iday][rowmask] = self.UNFILLED
 
-        return (np.array(map_dates), map_fdates, map_jds,
-                map_utcs, schedmap)
+        return (np.array(map_dates), map_fdates, map_jds, map_utcs, schedmap)
 
     def _initEfficiencyMap(self, monthlyeffs):
         """
@@ -346,11 +352,10 @@ class Darkness(object):
               array of monthly efficiencies (12 months)
         """
 
-        if (len(monthlyeffs) != 12):
+        if len(monthlyeffs) != 12:
             raise ValueError("Month efficiencies should have 12 entries")
 
-        spline = UnivariateSpline(np.linspace(1, 12, 12),
-                                  np.array(monthlyeffs))
+        spline = UnivariateSpline(np.linspace(1, 12, 12), np.array(monthlyeffs))
 
         ndays = len(self.map_dates)
         map_month = np.linspace(1, 12, ndays)
@@ -372,7 +377,7 @@ class Darkness(object):
         if mask is None:
             return
 
-        assert(mask.shape == self.map.shape)
+        assert mask.shape == self.map.shape
 
         # check if mask overlaps anything already scheduled:
         if np.any(self.map[mask] > self.UNFILLED):
@@ -392,9 +397,9 @@ class Darkness(object):
         startjd = self._date2jd(startdate)
         endjd = self._date2jd(enddate)
 
-        mask = (self.map == self.UNFILLED)
-        mask *= (datemap >= startjd)
-        mask *= (datemap <= endjd)
+        mask = self.map == self.UNFILLED
+        mask *= datemap >= startjd
+        mask *= datemap <= endjd
 
         self.map[mask] = value
 
@@ -417,8 +422,15 @@ class Darkness(object):
 
         return period
 
-    def draw(self, maptype=None, period=None,
-             ragrid=True, newfig=True, custommap=None, cmap=None):
+    def draw(
+        self,
+        maptype=None,
+        period=None,
+        ragrid=True,
+        newfig=True,
+        custommap=None,
+        cmap=None,
+    ):
         """display a schedule map
 
 
@@ -444,7 +456,7 @@ class Darkness(object):
 
         figsize = (15, 7)
 
-        if (period is not None):
+        if period is not None:
             figsize = (8, 8)
             self.label_angle = -10
         else:
@@ -459,9 +471,8 @@ class Darkness(object):
         else:
             fig = plt.gcf()
 
-        if (period is not None and maptype != 'custom'):
-            gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1],
-                                   wspace=0.07)
+        if period is not None and maptype != "custom":
+            gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1], wspace=0.07)
             plt.subplot(gs[1])
 
             self._drawLegend(period)
@@ -475,7 +486,7 @@ class Darkness(object):
         ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
 
         zlabel = ""
-        if (cmap is None):
+        if cmap is None:
             cmap = self.cmap
 
         # ==========================================================
@@ -487,7 +498,7 @@ class Darkness(object):
         vmin = 1
         vmax = themap.max() + 1
 
-        if (maptype == 'ra'):
+        if maptype == "ra":
             # generate a RA plot (masking off the non-dark parts)
             themap = self.ramap
             plt.hsv()
@@ -495,19 +506,19 @@ class Darkness(object):
             cmap = plt.cm.hsv
             vmin = None
             vmax = None
-        elif (maptype == 'eff'):
+        elif maptype == "eff":
             themap = self.effmap
             zlabel = "Efficiency"
             cmap = plt.cm.winter
             vmin = None
             vmax = None
-        elif (maptype == 'zenith'):
+        elif maptype == "zenith":
             themap = self.zenithMap
             vmin = 0.0
             vmax = 65.0
             cmap = plt.cm.PuRd  # RdBu_r
             zlabel = "Zenith Angle (deg)"
-        elif (maptype == 'custom'):
+        elif maptype == "custom":
             themap = custommap
             vmin = None
             vmax = None
@@ -515,18 +526,18 @@ class Darkness(object):
         else:
             pass
 
-        mask = (self.boolmap == 0)  # don't draw non-darktime
+        mask = self.boolmap == 0  # don't draw non-darktime
         themap = np.ma.array(themap)
         themap[mask] = np.ma.masked
 
         # ==========================================================
         # zoom to period
         # ==========================================================
-        if (period is not None):
+        if period is not None:
             # zoom to selected period:
-            themap, fdates = self._getPeriodSubMap(period,
-                                                   themap=themap,
-                                                   withdates=True)
+            themap, fdates = self._getPeriodSubMap(
+                period, themap=themap, withdates=True
+            )
             schedmap = self._getPeriodSubMap(period, themap=self.map)
 
             plt.title(self._name + " P" + period)
@@ -539,65 +550,70 @@ class Darkness(object):
 
         plt.ylim(utcrange[0], utcrange[1])
 
-        plt.pcolormesh(fdates, self.map_utcs, themap.T,
-                       cmap=cmap, vmin=vmin, vmax=vmax)
+        plt.pcolormesh(fdates, self.map_utcs, themap.T, cmap=cmap, vmin=vmin, vmax=vmax)
 
-        if (maptype is not None and maptype != "none" and maptype != 'custom'):
+        if maptype is not None and maptype != "none" and maptype != "custom":
             cb = plt.colorbar()
             cb.ax.set_ylabel(zlabel)
 
         # overlay areas of reserved schedule
-        freemask = (schedmap == self.RESERVED)
+        freemask = schedmap == self.RESERVED
         unavailable = np.ma.masked_array(schedmap, np.invert(freemask))
-        plt.contourf(fdates, self.map_utcs, unavailable.T,
-                     colors=['#555555'],
-                     hatches=['//'],
-                     levels=[0, 1]
-                     )
+        plt.contourf(
+            fdates,
+            self.map_utcs,
+            unavailable.T,
+            colors=["#555555"],
+            hatches=["//"],
+            levels=[0, 1],
+        )
 
-        fig.autofmt_xdate(rotation=90, ha='center')
+        fig.autofmt_xdate(rotation=90, ha="center")
         plt.xlabel("Date")
         plt.ylabel("UTC (hrs)")
         plt.grid()
 
-        if (period is None):
+        if period is None:
             for per in np.unique(self.periods):
                 self.labelPeriod(per)
 
-        if (ragrid):
+        if ragrid:
             contlevels = np.arange(0, 36, 2)
             contlabels = dict()
             for lev in contlevels:
                 contlabels[lev] = "{0:d}$^h$".format(np.mod(lev, 24))
 
-            ramap, fdates = self._getPeriodSubMap(period,
-                                                  themap=self.ramap_nomod,
-                                                  withdates=True)
+            ramap, fdates = self._getPeriodSubMap(
+                period, themap=self.ramap_nomod, withdates=True
+            )
 
-            cont = plt.contour(fdates, self.map_utcs,
-                               ramap.T,
-                               levels=contlevels, colors='b',
-                               linestyles='dotted')
+            cont = plt.contour(
+                fdates,
+                self.map_utcs,
+                ramap.T,
+                levels=contlevels,
+                colors="b",
+                linestyles="dotted",
+            )
             plt.clabel(cont, use_clabeltext=True, fmt=contlabels)
 
-        plt.connect('button_press_event', self._on_click)
-        plt.connect('motion_notify_event', self._on_motion)
+        plt.connect("button_press_event", self._on_click)
+        plt.connect("motion_notify_event", self._on_motion)
 
-        fillhrs, fillhrs_corr = self.hoursForTarget(target_id=None,
-                                                    period=period)
-        freehrs, freehrs_corr = self.hoursForTarget(self.UNFILLED,
-                                                    period=period)
+        fillhrs, fillhrs_corr = self.hoursForTarget(target_id=None, period=period)
+        freehrs, freehrs_corr = self.hoursForTarget(self.UNFILLED, period=period)
 
         # if period != None:
         #     axsave = plt.axes([0.81, 0.05, 0.1, 0.075])
         #     bsave = Button(axnext, 'Save')
         #     bnext._on_clicked(self.on_save_clicked)
 
-        if (maptype != 'custom'):
-            plt.suptitle(("{4} filled: {0:.1f} ({1:.1f}) h  "
-                          "  free: {2:.1f} ({3:.1f}) h").format(
-                              fillhrs, fillhrs_corr, freehrs,
-                              freehrs_corr, self._name))
+        if maptype != "custom":
+            plt.suptitle(
+                (
+                    "{4} filled: {0:.1f} ({1:.1f}) h  " "  free: {2:.1f} ({3:.1f}) h"
+                ).format(fillhrs, fillhrs_corr, freehrs, freehrs_corr, self._name)
+            )
 
         return fig
 
@@ -613,11 +629,14 @@ class Darkness(object):
     def labelPeriod(self, period, yval=4.75):
         """ put a label above the period """
         period = self.periodName(period)
-        plt.text(self.meanMapFDateForPeriod(period), yval,
-                 "P" + period,
-                 horizontalalignment='center',
-                 verticalalignment='center',
-                 fontsize=10)
+        plt.text(
+            self.meanMapFDateForPeriod(period),
+            yval,
+            "P" + period,
+            horizontalalignment="center",
+            verticalalignment="center",
+            fontsize=10,
+        )
 
     def search(self, regexp):
         """
@@ -632,11 +651,16 @@ class Darkness(object):
         target_indices = []
 
         for target_id in self.targets:
-            if re.match(regexp, self.getTarget(target_id)['Target_Name'],
-                        re.IGNORECASE):
-                print(("{0:4.1f} {1}"
-                       .format(target_id,
-                               self.getTarget(target_id)['Target_Name'])))
+            if re.match(
+                regexp, self.getTarget(target_id)["Target_Name"], re.IGNORECASE
+            ):
+                print(
+                    (
+                        "{0:4.1f} {1}".format(
+                            target_id, self.getTarget(target_id)["Target_Name"]
+                        )
+                    )
+                )
                 target_indices.append(target_id)
 
         return target_indices
@@ -645,14 +669,15 @@ class Darkness(object):
         """ draw the scheduled objects legend """
 
         submap = self.map
-        if (period):
+        if period:
             submap = self._getPeriodSubMap(period)
 
         patches = []
         target_indices = np.unique(
-            np.sort(submap[submap > Darkness.UNFILLED].flatten()))
+            np.sort(submap[submap > Darkness.UNFILLED].flatten())
+        )
 
-        names = [self.targets[x]['Target_Name'] for x in target_indices]
+        names = [self.targets[x]["Target_Name"] for x in target_indices]
 
         ax = plt.gca()
         ax.set_navigate = False
@@ -683,21 +708,23 @@ class Darkness(object):
                 continue
 
             color = self.cmap(
-                self.colormap(target_id - 1) /
-                float(self.colormap(self.map).max()))
-            plt.text(x + wid * 1.1, y + delta / 4,
-                     "{0} \n{1:4.1f}h ({2:4.1f}h) {3}".format(name,
-                                                              hours,
-                                                              corrhours,
-                                                              propid),
-                     verticalalignment='center',
-                     fontsize=fsize, fontweight='bold', color=color)
+                self.colormap(target_id - 1) / float(self.colormap(self.map).max())
+            )
+            plt.text(
+                x + wid * 1.1,
+                y + delta / 4,
+                "{0} \n{1:4.1f}h ({2:4.1f}h) {3}".format(
+                    name, hours, corrhours, propid
+                ),
+                verticalalignment="center",
+                fontsize=fsize,
+                fontweight="bold",
+                color=color,
+            )
 
-            patches.append(Rectangle((x, y), wid, delta / 2,
-                                     color=color))
+            patches.append(Rectangle((x, y), wid, delta / 2, color=color))
 
-        collection = PatchCollection(patches, cmap=self.cmap,
-                                     match_original=True)
+        collection = PatchCollection(patches, cmap=self.cmap, match_original=True)
         ax.add_collection(collection)
 
     def drawRADist(self, nbins=24):
@@ -711,9 +738,9 @@ class Darkness(object):
         hcorrs = []
 
         for targ in self.targets.values():
-            ras.append(targ['RA_2000'])
-            hreqs.append(targ['Hours_Requested'])
-            hraw, hcorr = self.hoursForTarget(targ['INDEX'])
+            ras.append(targ["RA_2000"])
+            hreqs.append(targ["Hours_Requested"])
+            hraw, hcorr = self.hoursForTarget(targ["INDEX"])
             hraws.append(hraw)
             hcorrs.append(hcorr)
 
@@ -725,25 +752,41 @@ class Darkness(object):
         fig = plt.figure()
         rng = [0, 24]
 
-        hisreq, xbin, p = plt.hist(ras, weights=hreqs, bins=nbins,
-                                   range=rng, label="Accepted",
-                                   color='skyblue',
-                                   edgecolor='white')
-        hisraw, xbin, p = plt.hist(ras, weights=hraws, bins=nbins, range=rng,
-                                   label="Scheduled (100% efficiency)",
-                                   color='orange', alpha=0.8)
-        hisexp, xbin, p = plt.hist(ras, weights=hcorrs, bins=nbins, range=rng,
-                                   label="Scheduled (expected)",
-                                   color='seagreen',
-                                   alpha=0.4)
-        plt.legend(loc='upper left')
+        hisreq, xbin, p = plt.hist(
+            ras,
+            weights=hreqs,
+            bins=nbins,
+            range=rng,
+            label="Accepted",
+            color="skyblue",
+            edgecolor="white",
+        )
+        hisraw, xbin, p = plt.hist(
+            ras,
+            weights=hraws,
+            bins=nbins,
+            range=rng,
+            label="Scheduled (100% efficiency)",
+            color="orange",
+            alpha=0.8,
+        )
+        hisexp, xbin, p = plt.hist(
+            ras,
+            weights=hcorrs,
+            bins=nbins,
+            range=rng,
+            label="Scheduled (expected)",
+            color="seagreen",
+            alpha=0.4,
+        )
+        plt.legend(loc="upper left")
         plt.ylabel("Scheduled Hours")
         plt.xlabel("RA (h)")
         plt.grid()
 
         return
 
-    def drawTargetPie(self, kind='scheduled'):
+    def drawTargetPie(self, kind="scheduled"):
         """
         draws a target-type pie chart
 
@@ -753,21 +796,21 @@ class Darkness(object):
         totalhrs = defaultdict(float)
 
         for targ in self.targets.values():
-            ttype = targ['Target_Type'].capitalize()
+            ttype = targ["Target_Type"].capitalize()
             hrs = 0
-            if kind == 'scheduled':
-                hrs = self.hoursForTarget(targ['INDEX'])[1]
-            elif kind == 'accepted':
-                hrs = targ['Hours_Accepted']
-            elif kind == 'proposed' or kind == "requested":
-                hrs = targ['Hours_Requested']
+            if kind == "scheduled":
+                hrs = self.hoursForTarget(targ["INDEX"])[1]
+            elif kind == "accepted":
+                hrs = targ["Hours_Accepted"]
+            elif kind == "proposed" or kind == "requested":
+                hrs = targ["Hours_Requested"]
             else:
                 raise TypeError("unknown kind: " + kind)
 
             totalhrs[ttype] += hrs
 
-        if kind == 'scheduled':
-            totalhrs['FREE'] += self.hoursForTarget(self.UNFILLED)[1]
+        if kind == "scheduled":
+            totalhrs["FREE"] += self.hoursForTarget(self.UNFILLED)[1]
 
         keys = np.array(list(totalhrs.keys()))
         vals = np.array([totalhrs[x] for x in keys])
@@ -782,15 +825,29 @@ class Darkness(object):
 
         fracs = vv / np.sum(vv)
 
-        plt.pie(fracs, labels=labs, autopct="%d%%",
-                colors=('yellowgreen', 'gold', 'lightskyblue', 'pink',
-                        'cyan', 'burlywood', 'm', 'y', 'orange',
-                        'purple', 'w'))
+        plt.pie(
+            fracs,
+            labels=labs,
+            autopct="%d%%",
+            colors=(
+                "yellowgreen",
+                "gold",
+                "lightskyblue",
+                "pink",
+                "cyan",
+                "burlywood",
+                "m",
+                "y",
+                "orange",
+                "purple",
+                "w",
+            ),
+        )
         plt.title("{1} {0} Time".format(kind.capitalize(), self._name))
 
         return keys, vals
 
-    def drawPie(self, kind='scheduled'):
+    def drawPie(self, kind="scheduled"):
         """
         draws a working-group pie chart
 
@@ -802,44 +859,56 @@ class Darkness(object):
 
         for targ in self.targets.values():
 
-            if targ['Observation_Strategy'] == 'TOO':
+            if targ["Observation_Strategy"] == "TOO":
                 continue
 
-            wgs = [targ['Working_Group']]
-            wg2 = targ['Working_Group_Secondary'].split(",")
+            wgs = [targ["Working_Group"]]
+            wg2 = targ["Working_Group_Secondary"].split(",")
 
-            if targ['Working_Group_Secondary'] != "":
+            if targ["Working_Group_Secondary"] != "":
                 wgs.append(wg2)
 
             for wg in flatten(wgs):
-                if kind == 'scheduled':
-                    hrs = self.hoursForTarget(targ['INDEX'])[1]
-                elif kind == 'accepted':
-                    hrs = targ['Hours_Accepted']
-                elif kind == 'proposed' or kind == "requested":
-                    hrs = targ['Hours_Requested']
+                if kind == "scheduled":
+                    hrs = self.hoursForTarget(targ["INDEX"])[1]
+                elif kind == "accepted":
+                    hrs = targ["Hours_Accepted"]
+                elif kind == "proposed" or kind == "requested":
+                    hrs = targ["Hours_Requested"]
                 else:
                     raise TypeError("unknown kind: " + kind)
                 wgtotal[wg] += hrs
                 total += hrs
 
         free = self.hoursForTarget(self.UNFILLED)[1]
-        if kind == 'scheduled':
+        if kind == "scheduled":
             total += free
 
         log.debug("WGTOTAL: {}".format(wgtotal))
         keys = list(wgtotal.keys())
-        labels = ["{0}\n({1:.0f} hrs)".format(key, wgtotal[key])
-                  for key in keys]
+        labels = ["{0}\n({1:.0f} hrs)".format(key, wgtotal[key]) for key in keys]
         fracs = [wgtotal[key] / total for key in keys]
 
-        if (free > 0.5 and kind == 'scheduled'):
+        if free > 0.5 and kind == "scheduled":
             labels.append("Free\n({0:.0f} hrs)".format(free))
             fracs.append(free / total)
 
-        plt.pie(fracs, labels=labels, autopct="%d%%",
-                colors=('yellowgreen', 'gold', 'lightskyblue',
-                        'pink', 'm', 'y', 'orange', 'purple', 'w'))
+        plt.pie(
+            fracs,
+            labels=labels,
+            autopct="%d%%",
+            colors=(
+                "yellowgreen",
+                "gold",
+                "lightskyblue",
+                "pink",
+                "m",
+                "y",
+                "orange",
+                "purple",
+                "w",
+            ),
+        )
 
         plt.title("{1} {0} Time by WG".format(kind.capitalize(), self._name))
 
@@ -854,13 +923,18 @@ class Darkness(object):
         zmap = self.zenithMap
         if target_id:
             zmap = zmap[self.map == target_id]
-            log.debug(("only for", self.getTarget(target_id)['Target_Name']))
+            log.debug(("only for", self.getTarget(target_id)["Target_Name"]))
 
         zen = zmap.flatten()
         zen = zen[zen > 1e-10]
-        plt.hist(zen[zen > 1e-10], range=[0, 80], bins=int(80 / 2),
-                 weights=np.ones_like(zen) * self.hours_per_map_bin,
-                 edgecolor='none', color='skyblue')
+        plt.hist(
+            zen[zen > 1e-10],
+            range=[0, 80],
+            bins=int(80 / 2),
+            weights=np.ones_like(zen) * self.hours_per_map_bin,
+            edgecolor="none",
+            color="skyblue",
+        )
         plt.title("{0} Predicted Zenith Angles".format(self._name))
         plt.xlabel("Zenith Angle")
         plt.ylabel("Hours")
@@ -891,17 +965,17 @@ class Darkness(object):
 
         _set_target_defaults(targetinfo)  # sanitize just in case it
         # wasn't done before
-        targetinfo['FILL_ORDER'] = self._cur_fill_order
+        targetinfo["FILL_ORDER"] = self._cur_fill_order
         self._cur_fill_order += 1
 
-        RA = targetinfo['RA_2000']
-        dec = targetinfo['Dec_2000']
-        startdate = targetinfo['Start_Date']
-        enddate = targetinfo['End_Date']
-        effmode = targetinfo['Scheduling_Efficency']
-        minfillfraction = targetinfo['Scheduling_Min_Fraction']
-        sched_preference = targetinfo['Scheduling_Preference']
-        nhours = targetinfo['Hours_Accepted']
+        RA = targetinfo["RA_2000"]
+        dec = targetinfo["Dec_2000"]
+        startdate = targetinfo["Start_Date"]
+        enddate = targetinfo["End_Date"]
+        effmode = targetinfo["Scheduling_Efficency"]
+        minfillfraction = targetinfo["Scheduling_Min_Fraction"]
+        sched_preference = targetinfo["Scheduling_Preference"]
+        nhours = targetinfo["Hours_Accepted"]
         startjd = None
         endjd = None
 
@@ -917,14 +991,19 @@ class Darkness(object):
             # target (so don't schedule extra hours, and keep a single
             # target name and id number)
             target_id = close_ids[0]
-            if (verbose):
-                print(("APPN: Target {0} ({1}-{2:03d}) was filled as {3} ({4}-{5:03d}) and will be combined."
-                       .format(targetinfo['Target_Name'],
-                               targetinfo['Year'],
-                               targetinfo['Seqno'],
-                               self.getTarget(target_id)['Target_Name'],
-                               self.getTarget(target_id)['Year'],
-                               self.getTarget(target_id)['Seqno'],)))
+            if verbose:
+                print(
+                    (
+                        "APPN: Target {0} ({1}-{2:03d}) was filled as {3} ({4}-{5:03d}) and will be combined.".format(
+                            targetinfo["Target_Name"],
+                            targetinfo["Year"],
+                            targetinfo["Seqno"],
+                            self.getTarget(target_id)["Target_Name"],
+                            self.getTarget(target_id)["Year"],
+                            self.getTarget(target_id)["Seqno"],
+                        )
+                    )
+                )
         else:
             # otherwise, add the target to the list of scheduled
             # targets, with a new target ID
@@ -939,32 +1018,41 @@ class Darkness(object):
         if RA < 0:
             self._addTarget(target_id, targetinfo)
             if verbose:
-                print(("FILL: no RA for '{0}' (TARGET_ID={1}): not filling"
-                       .format(targetinfo['Target_Name'], target_id)))
+                print(
+                    (
+                        "FILL: no RA for '{0}' (TARGET_ID={1}): not filling".format(
+                            targetinfo["Target_Name"], target_id
+                        )
+                    )
+                )
             return
 
         # skip TOO targets
-        if targetinfo['Observation_Strategy'] == 'TOO':
+        if targetinfo["Observation_Strategy"] == "TOO":
             #            self._addTarget(target_id,targetinfo)
             if verbose:
-                print(
-                    ("FILL:", targetinfo['Target_Name'], " is TOO, skipping"))
+                print(("FILL:", targetinfo["Target_Name"], " is TOO, skipping"))
             return
 
         if effmode == "ignore":
-            print(("REALTIME: Target ", targetinfo['Target_Name'],
-                   "will be filled without efficiency correction"))
+            print(
+                (
+                    "REALTIME: Target ",
+                    targetinfo["Target_Name"],
+                    "will be filled without efficiency correction",
+                )
+            )
 
-        if (nhours < 1e-10):
+        if nhours < 1e-10:
             return
 
-        frequency = int(targetinfo['Scheduling_Frequency'])
-        if (frequency == 0):
+        frequency = int(targetinfo["Scheduling_Frequency"])
+        if frequency == 0:
             frequency = 1
 
         #  Calculate allowed zeniths:
-        zmax = targetinfo['Zenith_Max']
-        zmin = targetinfo['Zenith_Min']
+        zmax = targetinfo["Zenith_Max"]
+        zmin = targetinfo["Zenith_Min"]
         zmap = self._generateZenithAngleMap(RA, dec)
 
         # depending on fill strategy (time or zenith), choose number
@@ -973,11 +1061,10 @@ class Darkness(object):
             zbandwidth_deg = 0.0
             num_zbands = 1  # just one band in ZA
         elif sched_preference == "zenith":
-            zbandwidth_deg = targetinfo['Scheduling_Zenith_Step']
+            zbandwidth_deg = targetinfo["Scheduling_Zenith_Step"]
             num_zbands = np.ceil((zmax - zmin) / zbandwidth_deg)
         else:
-            raise ValueError("Unknown scheduling pref: {0}"
-                             .format(sched_preference))
+            raise ValueError("Unknown scheduling pref: {0}".format(sched_preference))
 
         # ===========================================================
         # First find all possible bins where the source could be filled
@@ -987,15 +1074,15 @@ class Darkness(object):
         bands = np.linspace(zmin, zmax, num_zbands + 1)
 
         tmpmap = self.map.copy()  # to test what could be filled
-        startmask = (tmpmap == self.UNFILLED)
+        startmask = tmpmap == self.UNFILLED
 
         datemap, utcmap = self.date_time_map
         datemap = datemap.T
 
-        if (startjd):
-            startmask &= (datemap > startjd)
-        if (endjd):
-            startmask &= (datemap < endjd)
+        if startjd:
+            startmask &= datemap > startjd
+        if endjd:
+            startmask &= datemap < endjd
 
         startmask &= zmap > zmin  # account for minimum zenith angle
         timemask = startmask.copy()
@@ -1017,44 +1104,64 @@ class Darkness(object):
 
             realtime = effmode == "ignore"
             mask &= zmap < zbandmax  # maximum in current band
-            tmptimemask, hours = self._maskByTime(mask, nhours - hours_filled,
-                                                  frequency, realtime)
+            tmptimemask, hours = self._maskByTime(
+                mask, nhours - hours_filled, frequency, realtime
+            )
 
             hours_filled += hours
             tmpmap[tmptimemask] = target_id
 
-        timemask = (tmpmap == target_id)
+        timemask = tmpmap == target_id
         del zmap
         del tmpmap
 
-        sched = self._name[self._name.find(" ") + 1:]
+        sched = self._name[self._name.find(" ") + 1 :]
 
         # don't fill targets that don't meet minium hours requirement
 
-        if (targetinfo['Observation_Mode'] != 'survey'
-                and targetinfo['Working_Group_Rank'] < 100
-                and hours_filled < (minfillfraction * nhours)):
+        if (
+            targetinfo["Observation_Mode"] != "survey"
+            and targetinfo["Working_Group_Rank"] < 100
+            and hours_filled < (minfillfraction * nhours)
+        ):
 
-            print(("FILL: {sched:10s} {id:3.0f} {name:30s} NOT FILLED: "
-                   "Fill Fraction {frac:3.0f}% <{min:3.0f}%"
-                   .format(sched=sched, id=target_id,
-                           name=targetinfo['Target_Name'],
-                           frac=100 * hours_filled / nhours,
-                           min=minfillfraction * 100)))
+            print(
+                (
+                    "FILL: {sched:10s} {id:3.0f} {name:30s} NOT FILLED: "
+                    "Fill Fraction {frac:3.0f}% <{min:3.0f}%".format(
+                        sched=sched,
+                        id=target_id,
+                        name=targetinfo["Target_Name"],
+                        frac=100 * hours_filled / nhours,
+                        min=minfillfraction * 100,
+                    )
+                )
+            )
 
-            self.targets[target_id]['BELOW_FILL_FRACTION'] = True
+            self.targets[target_id]["BELOW_FILL_FRACTION"] = True
             return None
 
         # otherwise, fill the target into the schedule:
         self.map[timemask] = target_id
 
         if verbose:
-            line = "FILL: {sched:8s} {id:3.0f} {name:30s} RA:{ra:4.1f} STRAT:{method:7s}" \
+            line = (
+                "FILL: {sched:8s} {id:3.0f} {name:30s} RA:{ra:4.1f} STRAT:{method:7s}"
                 "{nfilled:5.1f} of {nhours:5.1f} hrs "
-            print((line.format(sched=sched, id=target_id,
-                               name=targetinfo['Target_Name'], ra=RA,
-                               nhours=float(nhours), nfilled=hours_filled,
-                               method=sched_preference)))
+            )
+            print(
+                (
+                    line.format(
+                        sched=sched,
+                        id=target_id,
+                        name=targetinfo["Target_Name"],
+                        ra=RA,
+                        nhours=float(nhours),
+                        nfilled=hours_filled,
+                        method=sched_preference,
+                    )
+                )
+            )
 
         return timemask  # in case you want to plot it
 
@@ -1161,7 +1268,7 @@ class Darkness(object):
         period: int or string
             period number or name
         """
-        if (period is not None):
+        if period is not None:
             effmap = self._getPeriodSubMap(period, themap=self.effmap)
             schmap = self._getPeriodSubMap(period)
         else:
@@ -1170,8 +1277,7 @@ class Darkness(object):
 
         if target_id:
             if target_id >= self.target_step:
-                mask = schmap / self.target_step == target_id / \
-                    self.target_step
+                mask = schmap / self.target_step == target_id / self.target_step
             else:
                 mask = schmap == target_id
 
@@ -1181,8 +1287,7 @@ class Darkness(object):
         bins_eff = np.sum(effmap[mask])
         bins = len(effmap[mask])
 
-        return (bins * self.hours_per_map_bin,
-                bins_eff * self.hours_per_map_bin)
+        return (bins * self.hours_per_map_bin, bins_eff * self.hours_per_map_bin)
 
     def hoursForRABand(self, minra, maxra):
         """returns number of hours (raw,est) for an RA range
@@ -1196,15 +1301,18 @@ class Darkness(object):
         """
         ras = self.ramap * (self.map > self.UNFILLED)
         effs = self.effmap[(ras > minra) & (ras < maxra)]
-        return (len(effs) * self.hours_per_map_bin,
-                np.sum(effs) * self.hours_per_map_bin)
+        return (
+            len(effs) * self.hours_per_map_bin,
+            np.sum(effs) * self.hours_per_map_bin,
+        )
 
     def s(self, **kwargs):
         """ alias for printSummary() """
         self.printSummary(**kwargs)
 
-    def printSummary(self, sortkey='INDEX',
-                     filter_target=None, filter_wg=None, wrap=False):
+    def printSummary(
+        self, sortkey="INDEX", filter_target=None, filter_wg=None, wrap=False
+    ):
         """display the summary data in a text table.  By default all
         results are given, however you may filter by target name or wg
         using regular expressions.
@@ -1223,15 +1331,21 @@ class Darkness(object):
             word-wrap the output
         """
 
-        line = "{clr}{tid:4d} {grade:4.2f} {wg:8s} {name:30s} {pid:8s} "\
-            "{ra:02.0f} {req:4.0f} {hours:4.0f} "\
+        line = (
+            "{clr}{tid:4d} {grade:4.2f} {wg:8s} {name:30s} {pid:8s} "
+            "{ra:02.0f} {req:4.0f} {hours:4.0f} "
             "| {pct:3d} {flag:4s}" + colorama.Fore.RESET
+        )
 
         print(self._name, "Schedule Summary sorted by", sortkey)
-        print("                                                       "
-              "          --- HOURS ---")
-        print("  # Grade    WG        Target                     "
-              "Proposal RA  Req  Est   pct Notes")
+        print(
+            "                                                       "
+            "          --- HOURS ---"
+        )
+        print(
+            "  # Grade    WG        Target                     "
+            "Proposal RA  Req  Est   pct Notes"
+        )
         print("-" * 130)
         totreq = 0
         totcorr = 0
@@ -1240,9 +1354,21 @@ class Darkness(object):
 
         prevtid = -1
 
-        for (target_id, prop_id, rank, appclass, wg, name, ra,
-             hours_requested, corrhours, hours, status, percent,
-             grade) in data:
+        for (
+            target_id,
+            prop_id,
+            rank,
+            appclass,
+            wg,
+            name,
+            ra,
+            hours_requested,
+            corrhours,
+            hours,
+            status,
+            percent,
+            grade,
+        ) in data:
 
             if int(target_id / self.target_step) == prevtid:
                 name = " --> " + name
@@ -1253,17 +1379,22 @@ class Darkness(object):
             elif percent < 60:
                 clr = colorama.Fore.YELLOW
 
-            text = line.format(clr=clr, tid=target_id, pid=prop_id,
-                               grade=grade,
-                               wg=wg[0:7],
-                               name=name,
-                               req=hours_requested,
-                               hours=corrhours,
-                               flag=status, ra=ra, pct=percent)
+            text = line.format(
+                clr=clr,
+                tid=target_id,
+                pid=prop_id,
+                grade=grade,
+                wg=wg[0:7],
+                name=name,
+                req=hours_requested,
+                hours=corrhours,
+                flag=status,
+                ra=ra,
+                pct=percent,
+            )
 
             if wrap:
-                print((textwrap.fill(text, width=130,
-                                     subsequent_indent=" " * 85)))
+                print((textwrap.fill(text, width=130, subsequent_indent=" " * 85)))
             else:
                 print(text)
 
@@ -1273,18 +1404,24 @@ class Darkness(object):
 
         print("-" * 130)
 
-        print("             Scheduled: {0:8.1f} of {1:8.1f} requested h"
-              .format(totcorr, totreq))
+        print(
+            "             Scheduled: {0:8.1f} of {1:8.1f} requested h".format(
+                totcorr, totreq
+            )
+        )
 
-        totaldarkcorr = np.sum(
-            self.effmap[self.boolmap]) * self.hours_per_map_bin
+        totaldarkcorr = np.sum(self.effmap[self.boolmap]) * self.hours_per_map_bin
 
         darkh, darkhcorr = self.hoursOfFreeDarkTime()
-        print("              Darkness: {0:8.1f} of {1:8.1f} h are still free"
-              .format(darkhcorr, totaldarkcorr))
+        print(
+            "              Darkness: {0:8.1f} of {1:8.1f} h are still free".format(
+                darkhcorr, totaldarkcorr
+            )
+        )
 
-    def _getSummaryData(self, sortkey='Working_Group_Rank',
-                        filter_target=None, filter_wg=None):
+    def _getSummaryData(
+        self, sortkey="Working_Group_Rank", filter_target=None, filter_wg=None
+    ):
         """summarize what was scheduled. This is used by
         printSummary() and other methods that output the text-version
         of the schedule in various formats
@@ -1294,57 +1431,67 @@ class Darkness(object):
         """
         data = []
 
-        targets = sorted(self.targets.values(),
-                         key=itemgetter(sortkey, 'INDEX'))
+        targets = sorted(self.targets.values(), key=itemgetter(sortkey, "INDEX"))
 
         for targ in targets:
-            target_id = targ['INDEX']
+            target_id = targ["INDEX"]
             prop_id = self.proposalID(targ)
             hours, corrhours = self.hoursForTarget(target_id)
-            hours_requested = targ['Hours_Accepted']
-            rank = int(targ['Working_Group_Rank'])
+            hours_requested = targ["Hours_Accepted"]
+            rank = int(targ["Working_Group_Rank"])
             status = ""
-            appclass = targ['Approval_Class']
-            grade = targ['Science_Grade']
+            appclass = targ["Approval_Class"]
+            grade = targ["Science_Grade"]
 
-            if filter_target and not re.search(filter_target,
-                                               targ['Target_Name']):
+            if filter_target and not re.search(filter_target, targ["Target_Name"]):
                 continue
-            if filter_wg and not re.search(filter_wg, targ['Working_Group']):
+            if filter_wg and not re.search(filter_wg, targ["Working_Group"]):
                 continue
 
             percent = 0
-            if (targ['Hours_Accepted'] > 0):
-                if targ['Scheduling_Efficency'] == 'ignore':
-                    percent = int(round(100 -
-                                        (((targ['Hours_Accepted'])
-                                          - hours) /
-                                         (targ['Hours_Accepted']))
-                                        * 100))
+            if targ["Hours_Accepted"] > 0:
+                if targ["Scheduling_Efficency"] == "ignore":
+                    percent = int(
+                        round(
+                            100
+                            - (
+                                ((targ["Hours_Accepted"]) - hours)
+                                / (targ["Hours_Accepted"])
+                            )
+                            * 100
+                        )
+                    )
                 else:
-                    percent = int(round(100 -
-                                        (((targ['Hours_Accepted'])
-                                          - corrhours) /
-                                         (targ['Hours_Accepted']))
-                                        * 100))
+                    percent = int(
+                        round(
+                            100
+                            - (
+                                ((targ["Hours_Accepted"]) - corrhours)
+                                / (targ["Hours_Accepted"])
+                            )
+                            * 100
+                        )
+                    )
 
-            delta = round(targ['Hours_Accepted'] - corrhours, 0)
+            delta = round(targ["Hours_Accepted"] - corrhours, 0)
 
-            periods = ",".join([x.split("-")[1]
-                                for x in self.periodsForTarget(target_id)])
+            periods = ",".join(
+                [x.split("-")[1] for x in self.periodsForTarget(target_id)]
+            )
 
             if periods != "":
                 status += "[{0}]".format(periods)
 
-            if targ['Scheduling_Efficency'] == 'ignore':
-                delta = round(targ['Hours_Accepted'] - hours, 0)
+            if targ["Scheduling_Efficency"] == "ignore":
+                delta = round(targ["Hours_Accepted"] - hours, 0)
                 status += "(Realtime)"
 
             if "BELOW_FILL_FRACTION" in targ:
-                status += "<FRAC={0:.0f}% "\
-                          .format(targ['Scheduling_Min_Fraction'] * 100)
+                status += "<FRAC={0:.0f}% ".format(
+                    targ["Scheduling_Min_Fraction"] * 100
+                )
 
-            name = targ['Target_Name'].strip()  # .replace(" ","_")
+            name = targ["Target_Name"].strip()  # .replace(" ","_")
 
             # print a warning if we underfilled this source
             if delta > 1.0:
@@ -1356,20 +1503,35 @@ class Darkness(object):
             for nearby_target_id in nearbytarget_indices:
                 hh, chh = self.hoursForTarget(nearby_target_id)
                 if chh > 0.0 and self.isCombined(target_id, nearby_target_id):
-                    status += " +{0:.0f}h from {1}"\
-                        .format(chh, self.getTarget(target_id)['Target_Name'])
+                    status += " +{0:.0f}h from {1}".format(
+                        chh, self.getTarget(target_id)["Target_Name"]
+                    )
 
-            data.append((target_id, prop_id, rank, appclass,
-                         targ['Working_Group'], name, targ['RA_2000'],
-                         hours_requested, corrhours, hours, status,
-                         percent, grade))
+            data.append(
+                (
+                    target_id,
+                    prop_id,
+                    rank,
+                    appclass,
+                    targ["Working_Group"],
+                    name,
+                    targ["RA_2000"],
+                    hours_requested,
+                    corrhours,
+                    hours,
+                    status,
+                    percent,
+                    grade,
+                )
+            )
 
         return data
 
     def isCombined(self, target_id, nearby_target_id):
         """ return true if target id is a sub-target of nearby_target_id """
-        return (int(nearby_target_id / self.target_step) !=
-                int(target_id / self.target_step))
+        return int(nearby_target_id / self.target_step) != int(
+            target_id / self.target_step
+        )
 
     @property
     def score(self):
@@ -1380,9 +1542,9 @@ class Darkness(object):
         score = 0
         rsum = 0
         for target_id in self.targets:
-            rank = float(self.getTarget(target_id)['Working_Group_Rank'])
+            rank = float(self.getTarget(target_id)["Working_Group_Rank"])
             _, corrhours = self.hoursForTarget(target_id)
-            hours_requested = self.getTarget(target_id)['Hours_Accepted']
+            hours_requested = self.getTarget(target_id)["Hours_Accepted"]
             score += (corrhours - hours_requested) / (rank + 0.1)
             rsum += rank + 0.1
 
@@ -1400,36 +1562,40 @@ class Darkness(object):
             other schedule to compare with
         """
 
-        tdict = target_list_to_dict(list(dark.targets.values()), key='Entry')
+        tdict = target_list_to_dict(list(dark.targets.values()), key="Entry")
 
         for targ in self.targets.values():
 
-            entry = targ['Entry']
+            entry = targ["Entry"]
 
             if not entry in tdict:
-                print("ADDED: ", targ['Target_Name'], ": {0:+5.1f} hrs"\
-                      .format( self.hoursForTarget(targ['INDEX'])[1]))
+                print(
+                    "ADDED: ",
+                    targ["Target_Name"],
+                    ": {0:+5.1f} hrs".format(self.hoursForTarget(targ["INDEX"])[1]),
+                )
                 continue
 
             othertarg = tdict[entry]
-            otheridx = othertarg['INDEX']
+            otheridx = othertarg["INDEX"]
 
-            _, esthrs = self.hoursForTarget(targ['INDEX'])
+            _, esthrs = self.hoursForTarget(targ["INDEX"])
             _, oesthrs = dark.hoursForTarget(otheridx)
             deltat = esthrs - oesthrs
 
             if np.fabs(deltat) > 1.0:
-                print("{1:+5.1f} hrs : {0}"
-                      .format(targ['Target_Name'], deltat))
+                print("{1:+5.1f} hrs : {0}".format(targ["Target_Name"], deltat))
 
         # check for removed sources:
         tdict = target_list_to_dict(list(self.targets.values()), key="Entry")
         for targ in list(dark.targets.values()):
-            entry = targ['Entry']
+            entry = targ["Entry"]
             if entry not in tdict:
-                print("REMOVED: ", targ['Target_Name'],
-                      ": -{0:5.1f} hrs".format(
-                    self.hoursForTarget(targ['INDEX'])[0]))
+                print(
+                    "REMOVED: ",
+                    targ["Target_Name"],
+                    ": -{0:5.1f} hrs".format(self.hoursForTarget(targ["INDEX"])[0]),
+                )
                 continue
 
     def _getPeriodSubMap(self, period, themap=None, withdates=False):
@@ -1457,10 +1623,10 @@ class Darkness(object):
 
         period = self.periodName(period)
 
-        if (themap is None):
+        if themap is None:
             themap = self.map
 
-        if(period is None):
+        if period is None:
             if withdates:
                 return themap, self.map_fdates
             else:
@@ -1468,13 +1634,12 @@ class Darkness(object):
 
         bins = np.arange(len(self.map_dates))
         drange = self.getDateRangeForPeriod(period)
-        fullrange = bins[(self.map_dates >= drange[0])
-                         * (self.map_dates <= drange[1])]
+        fullrange = bins[(self.map_dates >= drange[0]) * (self.map_dates <= drange[1])]
         lo = fullrange[0]
         hi = fullrange[-1]
         submap = themap[lo:hi]
 
-        if (withdates):
+        if withdates:
             return submap, self.map_fdates[lo:hi]
         else:
             return submap
@@ -1504,25 +1669,28 @@ class Darkness(object):
 
         submap = self._getPeriodSubMap(period)
 
-        wrap = textwrap.TextWrapper(initial_indent=" " * 18,  # + "\\-> ",
-                                    subsequent_indent=" " * 18,  # + "\\-> ",
-                                    width=65)
+        wrap = textwrap.TextWrapper(
+            initial_indent=" " * 18,  # + "\\-> ",
+            subsequent_indent=" " * 18,  # + "\\-> ",
+            width=65,
+        )
 
-        targs = np.unique(
-            np.sort(submap[submap > Darkness.UNFILLED].flatten()))
+        targs = np.unique(np.sort(submap[submap > Darkness.UNFILLED].flatten()))
 
         for target_id in targs:
-            name = colorama.Style.BRIGHT +\
-                self.getTarget(target_id)['Target_Name'] +\
-                colorama.Style.RESET_ALL
+            name = (
+                colorama.Style.BRIGHT
+                + self.getTarget(target_id)["Target_Name"]
+                + colorama.Style.RESET_ALL
+            )
             hours, hours_eff = self.hoursForTarget(target_id, period=period)
-            zen_min = self.getTarget(target_id)['Zenith_Min']
-            zen_max = self.getTarget(target_id)['Zenith_Max']
-            wobble = self.getTarget(target_id)['Wobble_Offset']
-            rank = self.getTarget(target_id)['Working_Group_Rank']
-            year = self.getTarget(target_id)['Year']
-            seqno = self.getTarget(target_id)['Seqno']
-            qual = self.getTarget(target_id)['Required_Data_Quality']
+            zen_min = self.getTarget(target_id)["Zenith_Min"]
+            zen_max = self.getTarget(target_id)["Zenith_Max"]
+            wobble = self.getTarget(target_id)["Wobble_Offset"]
+            rank = self.getTarget(target_id)["Working_Group_Rank"]
+            year = self.getTarget(target_id)["Year"]
+            seqno = self.getTarget(target_id)["Seqno"]
+            qual = self.getTarget(target_id)["Required_Data_Quality"]
             # skip sources that receive too little time this period
             if hours_eff < self.MIN_TIME_PER_PERIOD:
                 continue
@@ -1532,14 +1700,24 @@ class Darkness(object):
             #     line = "   also     {2:3d} {3:30s} {4:2.0f} {5:2.0f} {6:2.1f}"
 
             line += " {7:4d}-{8:02d} {9:10s}"
-            line = line.format(hours, hours_eff, rank, name,
-                               zen_min, zen_max, wobble, year, seqno, qual)
+            line = line.format(
+                hours,
+                hours_eff,
+                rank,
+                name,
+                zen_min,
+                zen_max,
+                wobble,
+                year,
+                seqno,
+                qual,
+            )
 
             print(line)
 
             if withrequests:
-                com = self.getTarget(target_id)['Comments']
-                spec = self.getTarget(target_id)['Special_Requests']
+                com = self.getTarget(target_id)["Comments"]
+                spec = self.getTarget(target_id)["Special_Requests"]
                 req = ""
                 if com and withcomments:
                     req += com
@@ -1550,16 +1728,15 @@ class Darkness(object):
                 if not (req is None or req == ""):
                     req += ". "
 
-                if (self.getTarget(target_id)['Scheduling_Efficency']
-                        == 'ignore'):
+                if self.getTarget(target_id)["Scheduling_Efficency"] == "ignore":
                     req += "Should be filled in real-time hours."
                 if req != "" and req is not None:
-                    print(colorama.Style.DIM + wrap.fill(req)
-                          + colorama.Style.RESET_ALL)
+                    print(
+                        colorama.Style.DIM + wrap.fill(req) + colorama.Style.RESET_ALL
+                    )
         free, free_eff = self.hoursForTarget(self.UNFILLED, period=period)
         if free > 0.1:
-            print("* free time: {0:.1f}h ({1:.1f}h effective)"
-                  .format(free, free_eff))
+            print("* free time: {0:.1f}h ({1:.1f}h effective)".format(free, free_eff))
 
     def printAllSchedules(self):
         for ii in range(1, 12, 1):
@@ -1575,27 +1752,31 @@ class Darkness(object):
         name = ""
         if target_id == Darkness.UNFILLED:
             name = "FREE DARKTIME"
-            print('Clicked on FREE DARKTIME')
+            print("Clicked on FREE DARKTIME")
         elif target_id == Darkness.RESERVED:
             name = "Reserved Darktime"
         elif target_id > Darkness.UNFILLED:
             try:
-                name = self.getTarget(target_id)['Target_Name']
+                name = self.getTarget(target_id)["Target_Name"]
             except:
                 print("couldn't lookup target_id", target_id)
 
-        if (event.button == 1):
-            txt = plt.text(event.xdata, event.ydata, name,
-                           fontsize=10, color='k',
-                           horizontalalignment='center',
-                           verticalalignment='center',
-                           fontweight='bold', rotation=self.label_angle)
-            txt.set_path_effects([PathEffects.withStroke(linewidth=3,
-                                                         foreground="w")])
+        if event.button == 1:
+            txt = plt.text(
+                event.xdata,
+                event.ydata,
+                name,
+                fontsize=10,
+                color="k",
+                horizontalalignment="center",
+                verticalalignment="center",
+                fontweight="bold",
+                rotation=self.label_angle,
+            )
+            txt.set_path_effects([PathEffects.withStroke(linewidth=3, foreground="w")])
             plt.gcf().canvas.draw()
         else:
             print(self.getTarget(target_id))
-
 
     def on_save_clicked(self, event):
         print(event)
@@ -1608,15 +1789,16 @@ class Darkness(object):
             name = "FREE"
             h = 0
             ch = 0
-            if (target_id > self.UNFILLED):
-                name = self.getTarget(target_id)['Target_Name']
-                rank = self.getTarget(target_id)['Working_Group_Rank']
+            if target_id > self.UNFILLED:
+                name = self.getTarget(target_id)["Target_Name"]
+                rank = self.getTarget(target_id)["Working_Group_Rank"]
                 h, ch = self.hoursForTarget(target_id)
                 pid = self.proposalID(self.getTarget(target_id))[5:]
                 # ra = self._getRAForPosition( event.xdata, event.ydata )
 
-                text = "{0} [{1}] R{4} {2:.1f}h p{3}".format(name, target_id,
-                                                             ch, pid, rank)
+                text = "{0} [{1}] R{4} {2:.1f}h p{3}".format(
+                    name, target_id, ch, pid, rank
+                )
             elif target_id == self.RESERVED:
                 text = "reserved"
             elif target_id == self.UNFILLED:
@@ -1677,8 +1859,8 @@ class Darkness(object):
         this one
         """
 
-        ra = target['RA_2000'] * 180.0 / 12.0  # ra in deg
-        dec = target['Dec_2000']
+        ra = target["RA_2000"] * 180.0 / 12.0  # ra in deg
+        dec = target["Dec_2000"]
 
         close_targets = []
 
@@ -1687,25 +1869,24 @@ class Darkness(object):
             if targ is target:
                 continue
 
-            tra = targ['RA_2000'] * 180.0 / 12.0
-            tdec = targ['Dec_2000']
+            tra = targ["RA_2000"] * 180.0 / 12.0
+            tdec = targ["Dec_2000"]
             dist = coordinates.ang_sep_deg(ra, dec, tra, tdec)
 
             if dist < radius_deg:  # and start == tstart:
-                close_targets.append(targ['INDEX'])
+                close_targets.append(targ["INDEX"])
 
         return close_targets
 
     @lru_cache()
     def _generateZenithAngleMap(self, ra, dec):
         dd, uu = self.date_time_map
-        return 90.0 - coordinates.radec_to_altaz(ra, dec,
-                                                 dd + uu / 24.0)[0].transpose()
+        return 90.0 - coordinates.radec_to_altaz(ra, dec, dd + uu / 24.0)[0].transpose()
 
     def zenithRangeForTarget(self, target_id):
         """ returns scheduled zenith angle range for target """
-        ra = self.getTarget(target_id)['RA_2000']
-        dec = self.getTarget(target_id)['Dec_2000']
+        ra = self.getTarget(target_id)["RA_2000"]
+        dec = self.getTarget(target_id)["Dec_2000"]
         zmap = self._generateZenithAngleMap(ra, dec)
         schedzmap = zmap * (self.map == target_id)
         del zmap
@@ -1719,19 +1900,26 @@ class Darkness(object):
             if np.sum(self.map == target_id) < 0:
                 continue
 
-            tzmap = self._generateZenithAngleMap(self.getTarget(target_id)['RA_2000'],
-                                                 self.getTarget(target_id)['Dec_2000'])
+            tzmap = self._generateZenithAngleMap(
+                self.getTarget(target_id)["RA_2000"],
+                self.getTarget(target_id)["Dec_2000"],
+            )
             schedzmap = tzmap * (self.map == target_id)
             zmin = schedzmap[schedzmap > 0.1]
-            if (len(zmin) > 0):  # otherwise get error if there are no
-                              # non-zero bins
+            if len(zmin) > 0:  # otherwise get error if there are no
+                # non-zero bins
                 zmin = zmin.min()
             else:
                 zmin = 0
 
-            print("\t{3:4d} {0:50s} {1:4.1f} {2:4.1f}"
-                  .format(self.getTarget(target_id)['Target_Name'], zmin,
-                          schedzmap.max(), target_id))
+            print(
+                "\t{3:4d} {0:50s} {1:4.1f} {2:4.1f}".format(
+                    self.getTarget(target_id)["Target_Name"],
+                    zmin,
+                    schedzmap.max(),
+                    target_id,
+                )
+            )
 
             zmap += schedzmap
             del schedzmap
@@ -1744,8 +1932,7 @@ class Darkness(object):
         """
 
         # find targets that match the subarray:
-        tids = [t.INDEX for t in self.targets.values()
-                if t.Subarray == subarray]
+        tids = [t.INDEX for t in self.targets.values() if t.Subarray == subarray]
 
         # generate the map:
         smap = np.zeros_like(self.map)
@@ -1758,6 +1945,7 @@ class Darkness(object):
 # ============================================================================
 # Functions to store and restore darnkess objects
 # ============================================================================
+
 
 def save_dark(dark, filename):
     """ save a Darkness object to a file """
