@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from .hessdb import read_dbtoolsrc
 
 logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 
 # ============================================================================
@@ -33,9 +33,13 @@ def get_dbstring_from_config():
     """
     """
     rc = read_dbtoolsrc("proposals")
-    return "mysql+pymysql://{user}:{password}@{host}:{port}/{db}"\
-        .format(user=rc['user'], password=rc['password'], host=rc['host'],
-                port=int(rc['port']), db=rc['database'])
+    return "mysql+pymysql://{user}:{password}@{host}:{port}/{db}".format(
+        user=rc["user"],
+        password=rc["password"],
+        host=rc["host"],
+        port=int(rc["port"]),
+        db=rc["database"],
+    )
 
 
 def init_engine():
@@ -64,14 +68,22 @@ def check_if_exists(session, year, seqno, revision=0):
     check if the proposal is already in the database
     """
 
-    nprops = session.query(Proposal)\
-                    .filter(and_(Proposal.Seqno == seqno,
-                                 Proposal.Year == year,
-                                 Proposal.Revision == revision)).count()
+    nprops = (
+        session.query(Proposal)
+        .filter(
+            and_(
+                Proposal.Seqno == seqno,
+                Proposal.Year == year,
+                Proposal.Revision == revision,
+            )
+        )
+        .count()
+    )
 
-    if (nprops > 0):
-        raise IndexError("Proposal {0}-{1}-{2} already in database"
-                         .format(year, seqno, revision))
+    if nprops > 0:
+        raise IndexError(
+            "Proposal {0}-{1}-{2} already in database".format(year, seqno, revision)
+        )
 
 
 def add_target_to_db(session, name, targetdict, setnum):
@@ -101,12 +113,13 @@ def add_proposal_to_db(session, propdict, year, seqno, revision=0):
     """
     global WRITE
 
-    propdict['Year'] = year
-    propdict['Seqno'] = seqno
-    propdict['Revision'] = revision
-    propdict['URL'] = ("http://www.mpi-hd.mpg.de/hfm/HESS/intern/Proposals"
-                       "/{year}/{year}-{seqno:03d}-{revision}.pdf").format(
-        year=year, seqno=int(seqno), revision=revision)
+    propdict["Year"] = year
+    propdict["Seqno"] = seqno
+    propdict["Revision"] = revision
+    propdict["URL"] = (
+        "http://www.mpi-hd.mpg.de/hfm/HESS/intern/Proposals"
+        "/{year}/{year}-{seqno:03d}-{revision}.pdf"
+    ).format(year=year, seqno=int(seqno), revision=revision)
 
     for prop in propdict:
         print("    {0:20s} : {1:30s}".format(prop, str(propdict[prop])))
@@ -119,8 +132,11 @@ def add_proposal_to_db(session, propdict, year, seqno, revision=0):
 
         # retrieve auto-generated SetNum
 
-        res = session.query(Proposal).filter_by(Year=year, Seqno=seqno,
-                                                Revision=revision).first()
+        res = (
+            session.query(Proposal)
+            .filter_by(Year=year, Seqno=seqno, Revision=revision)
+            .first()
+        )
 
         return res.SetNum
     else:

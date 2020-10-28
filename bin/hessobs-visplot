@@ -46,13 +46,13 @@ iers_b = iers.IERS_B.open()
 iers_b.ut1_utc(tx)
 
 
-SITES = {'HESS': c.EarthLocation(lon=16.3 * u.deg, lat=-23.26 * u.deg,
-                                 height=1800 * u.m),
-         'VERITAS': c.EarthLocation(lon="110d57m07s", lat="31d30m40s",
-                                    height=1268 * u.m),
-         'MAGIC': c.EarthLocation(lon=18.8900 * u.deg, lat=28.7619 * u.deg,
-                                  height=2200 * u.m),
-         }
+SITES = {
+    "HESS": c.EarthLocation(lon=16.3 * u.deg, lat=-23.26 * u.deg, height=1800 * u.m),
+    "VERITAS": c.EarthLocation(lon="110d57m07s", lat="31d30m40s", height=1268 * u.m),
+    "MAGIC": c.EarthLocation(
+        lon=18.8900 * u.deg, lat=28.7619 * u.deg, height=2200 * u.m
+    ),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -115,25 +115,25 @@ def plot_windows(times, site, grid=True):
         ax.xaxis.set_major_locator(DayLocator())
         ax.tick_params(pad=20)
 
-        ax.fill_between(fdates, 0, 360, sun.alt < -0 * u.deg,
-                        color='0.5', zorder=0)
+        ax.fill_between(fdates, 0, 360, sun.alt < -0 * u.deg, color="0.5", zorder=0)
 
         # nautical twilight
-        ax.fill_between(fdates, 0, 360, sun.alt < CIVIL_TWILIGHT_ANGLE,
-                        color='0.3', zorder=0)
+        ax.fill_between(
+            fdates, 0, 360, sun.alt < CIVIL_TWILIGHT_ANGLE, color="0.3", zorder=0
+        )
 
         # astronomical twilight
-        ax.fill_between(fdates, 0, 360, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE,
-                        color='k', zorder=0)
+        ax.fill_between(
+            fdates, 0, 360, sun.alt < ASTRONOMICAL_TWILIGHT_ANGLE, color="k", zorder=0
+        )
 
         # plot the moon window. Note that we don't use -18 degrees
 
-        ax.fill_between(fdates, 0, 360, moonup,
-                        color='sienna', zorder=0)
+        ax.fill_between(fdates, 0, 360, moonup, color="sienna", zorder=0)
 
-        ax.plot([], [], color='sienna', linewidth=10, label="Moon")
-        ax.plot([], [], color='0.5', linewidth=10, label="Twilight")
-        ax.plot([], [], color='k', linewidth=10, label="Darkness")
+        ax.plot([], [], color="sienna", linewidth=10, label="Moon")
+        ax.plot([], [], color="0.5", linewidth=10, label="Twilight")
+        ax.plot([], [], color="k", linewidth=10, label="Darkness")
 
         if grid:
             ax.grid(color="0.8", which="minor")
@@ -154,7 +154,7 @@ def plot_windows(times, site, grid=True):
     axes[0].set_ylim(15, 90)
     axes[1].set_ylabel("Azimuth (deg)")
 
-    fig.autofmt_xdate(rotation=0, ha='center')
+    fig.autofmt_xdate(rotation=0, ha="center")
 
     return fdates, moonalt, fig, axes
 
@@ -188,12 +188,19 @@ def plot_altaz(axes, times, position, label, site):
                                                   foreground='white'),
                                patheffects.Normal()])
     '''
+
     azimuths = altaz.az.deg
     azimuths[azimuths > 359] = None  # create a break at the wrap-around point
-    axes[1].plot(fdates, azimuths, lw=3, label=label,
-                 path_effects=[patheffects.Stroke(linewidth=4,
-                                                  foreground='white'),
-                               patheffects.Normal()])
+    axes[1].plot(
+        fdates,
+        azimuths,
+        lw=3,
+        label=label,
+        path_effects=[
+            patheffects.Stroke(linewidth=4, foreground="white"),
+            patheffects.Normal(),
+        ],
+    )
 
     logger.debug("AZ,ALT: %s", list(zip(altaz.az.deg, altaz.alt.deg)))
 
@@ -230,14 +237,21 @@ def resolve_target_coordinates(target_names):
     return names, coords
 
 
-def visplot(target_names, target_coords, site="HESS", hrange=10,
-            centerhour=None, date=None, output=None, grid=True):
+def visplot(
+    target_names,
+    target_coords,
+    site="HESS",
+    hrange=10,
+    centerhour=None,
+    date=None,
+    output=None,
+    grid=True,
+):
     """ show a visiblity plot with targets overlaid """
 
     global SITES
 
-    dt = np.linspace(-int(hrange), int(hrange),
-                     50 * int(hrange)) * u.hour
+    dt = np.linspace(-int(hrange), int(hrange), 50 * int(hrange)) * u.hour
     now = datetime.utcnow()
 
     if centerhour is not None:
@@ -245,14 +259,14 @@ def visplot(target_names, target_coords, site="HESS", hrange=10,
     else:
         centerhour = 24 - int(round(SITES[site].lon.hour))
 
-    centerdate = t.Time(datetime(now.year, now.month, now.day,
-                                 centerhour), scale='utc')
+    centerdate = t.Time(datetime(now.year, now.month, now.day, centerhour), scale="utc")
 
     if date is not None:
         logger.debug("setting date")
-        cc = t.Time(date, scale='utc').datetime
-        centerdate = t.Time(datetime(cc.year, cc.month, cc.day, centerhour),
-                            scale='utc')
+        cc = t.Time(date, scale="utc").datetime
+        centerdate = t.Time(
+            datetime(cc.year, cc.month, cc.day, centerhour), scale="utc"
+        )
 
     # first plot the visibility windows
     times = centerdate + dt
@@ -265,8 +279,9 @@ def visplot(target_names, target_coords, site="HESS", hrange=10,
         ax.set_xlabel("Time ({})".format(times.scale))
         leg = ax.legend(loc="best", frameon=False)
         for tt in leg.texts:
-            tt.set_path_effects([patheffects.Stroke(linewidth=3, foreground="w"),
-                                 patheffects.Normal()])
+            tt.set_path_effects(
+                [patheffects.Stroke(linewidth=3, foreground="w"), patheffects.Normal()]
+            )
 
     axes[0].set_title("Visibility at {0}".format(site))
 
@@ -281,7 +296,7 @@ def visplot(target_names, target_coords, site="HESS", hrange=10,
     return centerdate, times, fd, malt
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = OptionParser(prog="visplot")
     parser.set_usage(
@@ -298,39 +313,62 @@ Author: Karl Kosack <karl.kosack@cea.fr>
 based on examples in the AstroPy package
 """
     )
-    parser.add_option("-d", "--date", dest="date",
-                      default=None, help="date to use as center of plot. " +
-                      "If not specified, tonight is used")
-    parser.add_option("-r", "--range", dest="range",
-                      default=10,
-                      help="number of hours (+/-) from midnight of the " +
-                      "specified date to plot")
+    parser.add_option(
+        "-d",
+        "--date",
+        dest="date",
+        default=None,
+        help="date to use as center of plot. " + "If not specified, tonight is used",
+    )
+    parser.add_option(
+        "-r",
+        "--range",
+        dest="range",
+        default=10,
+        help="number of hours (+/-) from midnight of the " + "specified date to plot",
+    )
 
-    parser.add_option("-s", "--site", dest="site",
-                      default="HESS",
-                      choices=list(SITES.keys()),
-                      help=("Observation site ({0})")
-                      .format(",".join(list(SITES.keys()))))
+    parser.add_option(
+        "-s",
+        "--site",
+        dest="site",
+        default="HESS",
+        choices=list(SITES.keys()),
+        help=("Observation site ({0})").format(",".join(list(SITES.keys()))),
+    )
 
-    parser.add_option("-c", "--center", dest="centerhour",
-                      default=None,
-                      help="Center plot on this hour (integer)." +
-                      " If not specified, automatically centered on " +
-                      "middle of night at the site")
+    parser.add_option(
+        "-c",
+        "--center",
+        dest="centerhour",
+        default=None,
+        help="Center plot on this hour (integer)."
+        + " If not specified, automatically centered on "
+        + "middle of night at the site",
+    )
 
-    parser.add_option("-o", "--output", dest="output",
-                      default=None,
-                      help="Output file to write to (any format" +
-                      " recognized by matplotlib). If not specified, " +
-                      "an interactive viewer will be displayed from " +
-                      "which the plot can be manipulated and saved.")
+    parser.add_option(
+        "-o",
+        "--output",
+        dest="output",
+        default=None,
+        help="Output file to write to (any format"
+        + " recognized by matplotlib). If not specified, "
+        + "an interactive viewer will be displayed from "
+        + "which the plot can be manipulated and saved.",
+    )
 
-    parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-                      help="more debugging info")
+    parser.add_option(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="more debugging info",
+    )
 
-    parser.add_option("-q", "--quiet", dest="quiet",
-                      action="store_true",
-                      help="less verbose output")
+    parser.add_option(
+        "-q", "--quiet", dest="quiet", action="store_true", help="less verbose output"
+    )
 
     parser.add_option("-x", "--xkcd", dest="xkcd", action="store_true")
 
@@ -343,7 +381,7 @@ based on examples in the AstroPy package
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if (opts.xkcd):
+    if opts.xkcd:
         plt.xkcd()
         grid = False
     else:
@@ -351,8 +389,8 @@ based on examples in the AstroPy package
         # ggplot style
         try:
             import seaborn
-            seaborn.set_palette(seaborn.color_palette("Paired", 20),
-                                n_colors=20)
+
+            seaborn.set_palette(seaborn.color_palette("Paired", 20), n_colors=20)
         except:
             plt.style.use("ggplot")
 
@@ -360,9 +398,15 @@ based on examples in the AstroPy package
 
     if not opts.quiet:
         for nn, cc in zip(target_names, target_coords):
-            print("{0:15s} : ".format(nn), cc.to_string(style='hmsdms'))
+            print("{0:15s} : ".format(nn), cc.to_string(style="hmsdms"))
 
-    cd, tt, fd, malt = visplot(target_names, target_coords,
-                               site=opts.site, hrange=opts.range,
-                               centerhour=opts.centerhour, date=opts.date,
-                               output=opts.output, grid=grid)
+    cd, tt, fd, malt = visplot(
+        target_names,
+        target_coords,
+        site=opts.site,
+        hrange=opts.range,
+        centerhour=opts.centerhour,
+        date=opts.date,
+        output=opts.output,
+        grid=grid,
+    )

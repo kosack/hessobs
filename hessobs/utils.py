@@ -24,9 +24,9 @@ def plot_available_time_vs_zmax(dark, target, **kwargs):
 
     """
 
-    ra_h = target['RA_2000']
-    dec_deg = target['Dec_2000']
-    name = target['Target_Name']
+    ra_h = target["RA_2000"]
+    dec_deg = target["Dec_2000"]
+    name = target["Target_Name"]
 
     zeniths = np.linspace(0, 70, 100)
 
@@ -34,8 +34,10 @@ def plot_available_time_vs_zmax(dark, target, **kwargs):
     zen = dark._generateZenithAngleMap(ra_h, dec_deg)
     zen[mask] = -1  # mark regions where we can't even observe
 
-    h_avail = np.array([np.sum(dark.effmap[(zen > 0) & (zen < zmax)])
-                        for zmax in zeniths]) * dark.hours_per_map_bin
+    h_avail = (
+        np.array([np.sum(dark.effmap[(zen > 0) & (zen < zmax)]) for zmax in zeniths])
+        * dark.hours_per_map_bin
+    )
 
     plt.plot(zeniths, h_avail, label=name, **kwargs)
     plt.xlabel("Maximum Allowed Zenith Angle (deg)")

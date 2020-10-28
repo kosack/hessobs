@@ -63,35 +63,32 @@ def jd_to_gmst_angle(jd):
 
 def radec_to_altaz(ra_hours, dec_deg, jd):
     """ returns alt,az in degrees """
-    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.
+    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.0
     ha = hourangle_from_ra(ra_hours, jd)
     cosha = cos(ha)
-    dec = (dec_deg * pi / 180.)
+    dec = dec_deg * pi / 180.0
 
-    az = -arctan2(sin(ha),
-                  cosha * sin(lat) - tan(dec) * cos(lat))
+    az = -arctan2(sin(ha), cosha * sin(lat) - tan(dec) * cos(lat))
 
-    alt = -arcsin(sin(lat) * sin(dec)
-                  + cos(lat) * cos(dec) * cosha)
+    alt = -arcsin(sin(lat) * sin(dec) + cos(lat) * cos(dec) * cosha)
 
-    return alt * 180. / pi, az * 180. / pi
+    return alt * 180.0 / pi, az * 180.0 / pi
 
 
 def altaz_to_radec(alt_deg, az_deg, jd):
     """ returns ra_hours, dec_deg """
 
-    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.
+    lat = -config.TELESCOPE_LATITUDE_DEG * pi / 180.0
 
-    az = -az_deg * pi / 180.
-    alt = -alt_deg * pi / 180.
+    az = -az_deg * pi / 180.0
+    alt = -alt_deg * pi / 180.0
 
-    ha = arctan2(sin(az),
-                 cos(az) * sin(lat) + tan(alt) * cos(lat))
+    ha = arctan2(sin(az), cos(az) * sin(lat) + tan(alt) * cos(lat))
 
     ra = ra_from_hourangle(ha, jd)
     dec = arcsin(sin(lat) * sin(alt) - cos(lat) * cos(alt) * cos(az))
 
-    return mod(ra * 12.0 / pi + 24, 24), dec * 180. / pi
+    return mod(ra * 12.0 / pi + 24, 24), dec * 180.0 / pi
 
 
 def ang_sep_deg(lambda0, beta0, lambda1, beta1):
@@ -123,8 +120,9 @@ def ang_sep_deg(lambda0, beta0, lambda1, beta1):
     sinb1 = sin(b1)
     cosdl = cos(l1 - l0)
 
-    numer = sqrt((cosb1 * sin(l1 - l0)) ** 2 +
-                 (cosb0 * sinb1 - sinb0 * cosb1 * cosdl) ** 2)
+    numer = sqrt(
+        (cosb1 * sin(l1 - l0)) ** 2 + (cosb0 * sinb1 - sinb0 * cosb1 * cosdl) ** 2
+    )
 
     denom = sinb0 * sinb1 + cosb0 * cosb1 * cosdl
 

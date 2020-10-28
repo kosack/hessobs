@@ -18,13 +18,13 @@ from hessobs import propdb
 from numpy import asarray
 from validate import ValidateError, Validator
 
-EMAIL_RE = re.compile('[\w.-]+@[\w-]+(?:\.\w+)')
+EMAIL_RE = re.compile("[\w.-]+@[\w-]+(?:\.\w+)")
 
 
 def email_check(value):
     """ filter used later to validate email addresses """
     if isinstance(value, list):
-        raise ValidateError('A list was passed, expected email')
+        raise ValidateError("A list was passed, expected email")
     if EMAIL_RE.match(value) is None:
         raise ValidateError('"%s" is not an email address' % value)
     return value
@@ -32,9 +32,7 @@ def email_check(value):
 
 def translate_subarray(subarray):
     """ return correct subarray name given short one """
-    subarray_map = {'CT5': 'CT5 Mono',
-                    'CT1-4': 'CT1-4 Stereo',
-                    'CT1-5': 'CT1-5 Hybrid'}
+    subarray_map = {"CT5": "CT5 Mono", "CT1-4": "CT1-4 Stereo", "CT1-5": "CT1-5 Hybrid"}
 
     return subarray_map[subarray]
 
@@ -99,7 +97,7 @@ def translate_fields(fields):
             if key == "Working-Group2":
                 column = "Working_Group_Secondary"
 
-        elif key == 'Subarray' or key == 'Subarrays-alt':
+        elif key == "Subarray" or key == "Subarrays-alt":
             continue
 
         elif "Sky_Brightness" in key:
@@ -159,12 +157,15 @@ def upload_pdf(filename, year, seqno, revision):
 
     """
 
-    newfilename = "{year}/{year}-{seqno:03d}-{revision}.pdf"\
-        .format(year=int(year), seqno=int(seqno), revision=int(revision))
+    newfilename = "{year}/{year}-{seqno:03d}-{revision}.pdf".format(
+        year=int(year), seqno=int(seqno), revision=int(revision)
+    )
 
-    command = ('cat {0} | ssh lfs1 "ssh iwww-hfm '
-               '\\"cd /home/wwwdoc/html/HESS/intern/Proposals;'
-               ' cat > {1}\\""').format(filename, newfilename)
+    command = (
+        'cat {0} | ssh lfs1 "ssh iwww-hfm '
+        '\\"cd /home/wwwdoc/html/HESS/intern/Proposals;'
+        ' cat > {1}\\""'
+    ).format(filename, newfilename)
 
     # remote ="iwww-hfm:/home/wwwdoc/html/HESS/intern/Proposals"
     # command= "scp {0} {1}/{2}".format(filename, remote, newfilename)
@@ -176,43 +177,52 @@ def upload_pdf(filename, year, seqno, revision):
 
 def validate(config):
     """ check that the inputs are correct """
+
     # hack to deal with when keywords is blank (string_list seems to
     # require at least one value)
-    if ('Keywords' in config):
-        if config['Keywords'] == "":
-            del config['Keywords']
+    if "Keywords" in config:
+        if config["Keywords"] == "":
+            del config["Keywords"]
 
-    validator = Validator({'email': email_check})
+    validator = Validator({"email": email_check})
     result = config.validate(validator, preserve_errors=True)
 
     if result is not True:
         for (sections, key, reason) in configobj.flatten_errors(config, result):
             if key is not None:
-                print(('The "{0}" key in the section "{1}" ' +
-                       'failed validation:\n\t-> {2}')
-                      .format(key, ', '.join(sections), reason))
+                print(
+                    (
+                        'The "{0}" key in the section "{1}" '
+                        + "failed validation:\n\t-> {2}"
+                    ).format(key, ", ".join(sections), reason)
+                )
             else:
-                print('The following section was missing:%s ' % ', '
-                      .join(sections))
+                print("The following section was missing:%s " % ", ".join(sections))
 
     return result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    usage = ('%prog <submission-date> <year> <seqno> <revision> '
-             '<prop-details-file> <pdf-file>')
-    description = ('Read a proposal details form and '
-                   'insert it into the Proposals database.'
-                   ' By default only print out the parsed info, '
-                   'and only modify the database if --write is specified')
+    usage = (
+        "%prog <submission-date> <year> <seqno> <revision> "
+        "<prop-details-file> <pdf-file>"
+    )
+    description = (
+        "Read a proposal details form and "
+        "insert it into the Proposals database."
+        " By default only print out the parsed info, "
+        "and only modify the database if --write is specified"
+    )
     optparser = OptionParser(usage=usage, description=description)
 
-    optparser.add_option("-w", "--write", action="store_true", dest="write",
-                         help="write to the database")
+    optparser.add_option(
+        "-w", "--write", action="store_true", dest="write", help="write to the database"
+    )
 
-    optparser.add_option("-u", "--upload", action="store_true", dest="upload",
-                         help="just upload file")
+    optparser.add_option(
+        "-u", "--upload", action="store_true", dest="upload", help="just upload file"
+    )
 
     try:
         opts, args = optparser.parse_args()
@@ -233,14 +243,13 @@ if __name__ == '__main__':
     print("PROP:", pdffile)
 
     targs = configobj.ConfigObj(propfile, configspec=targspecfile)
-    prop = configobj.ConfigObj(targs.pop("Proposal"),
-                               configspec=obsspecfile)
+    prop = configobj.ConfigObj(targs.pop("Proposal"), configspec=obsspecfile)
 
-    prop['Submission-Date'] = subdate
+    prop["Submission-Date"] = subdate
 
     print("VALIDATION OF", propfile)
 
-    if (validate(prop) is not True or validate(targs) is not True):
+    if validate(prop) is not True or validate(targs) is not True:
         print("\tValidation failed. Check input files")
         sys.exit(1)
     else:
@@ -270,8 +279,9 @@ if __name__ == '__main__':
         print(" PROPOSAL ")
         print("------------------------------")
 
-        setnum = propdb.add_proposal_to_db(session, translate_fields(prop),
-                                           year, seqno, revision)
+        setnum = propdb.add_proposal_to_db(
+            session, translate_fields(prop), year, seqno, revision
+        )
 
         print("\t--> SetNum=", setnum)
 
@@ -279,14 +289,13 @@ if __name__ == '__main__':
             print("------------------------------")
             print("", targ)
             print("------------------------------")
-            propdb.add_target_to_db(session, targ,
-                                    translate_fields(targs[targ]),
-                                    setnum)
+            propdb.add_target_to_db(
+                session, targ, translate_fields(targs[targ]), setnum
+            )
         session.commit()
     except Exception as ex:
         print("!" * 70)
-        print("Caught Exception:'", ex,
-              "'.  Rolling Back Database Transaction...")
+        print("Caught Exception:'", ex, "'.  Rolling Back Database Transaction...")
         session.rollback()
         print("!" * 70)
         raise ex
