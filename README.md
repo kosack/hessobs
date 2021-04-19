@@ -1,7 +1,19 @@
 # hessobs
 Tools for HESS observation planning
 
-## Example
+## Command-line Tools:
+
+The following works anywhere
+- `hessobs-visplot`: show altitide and azimuth plot of object at HESS, MAGIC, VERITAS for a given night
+- `hessobs-animate`: make animated visplot
+
+
+The following requrire read access to the HESS internal database:
+- `hessobs-summary`: produce summary plot and data of observations for a given time period 
+- `hessobs-ingestproposal`: add a proposal to the proposal db
+- `hessobs-verifyprop`: check a proposal in the db
+
+## Scheduling Example
 
 ```python
 import time
