@@ -447,7 +447,7 @@ if __name__ == "__main__":
     targets_by_date = (
         run_info_df[["Night", "Drive_Target_Name"]]
         .groupby("Night")
-        .agg(lambda x: ", ".join(list(set(x))))
+        .agg(lambda x: str(set(x)))
     )
 
     fmt = lambda x: "{0:3.1f}".format(x) if pd.notnull(x) else "-"
@@ -557,9 +557,17 @@ if __name__ == "__main__":
 
     # write out the target summary per date to a HTML table with search capability:
 
-    Table.from_pandas(targets_by_date, index=True).write(
+    target_table = Table.from_pandas(targets_by_date, index=True)
+    target_table.meta = {"CREATOR": "hessobs-summary", "DATE": t.Time.now().iso}
+    target_table.write(
         "{}targets_by_date.html".format(args.tag), format="jsviewer", overwrite=True
     )
+    target_table.write("{}targets_by_date.ecsv".format(args.tag), overwrite=True)
+    Table.from_pandas(run_info_df, index=True).write(
+        f"{args.tag}run_info.ecsv", overwrite=True
+    )
+
+    logger.info("WROTE *targets_by_date.{ecsv, html} and *run_info.ecsv")
 
     # ============================================================
     # Make an all-sky plot?
