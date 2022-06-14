@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 from astropy import coordinates as c
 from astropy import units as u
+from astropy import time as t
 from hessobs import hessdb
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
@@ -77,7 +78,7 @@ def _get_subarray_group_name(tels):
 
 
 def _get_target_group_for_target(targetname, target_map):
-    """ returns group name for given targetname """
+    """returns group name for given targetname"""
     global EXTRA_TARGET_MAP
 
     for rule, group in chain(EXTRA_TARGET_MAP.items(), target_map.items()):
@@ -88,7 +89,7 @@ def _get_target_group_for_target(targetname, target_map):
 
 
 def _load_target_map_from_db():
-    """ return a mapping of name -> group from the database """
+    """return a mapping of name -> group from the database"""
     targetmap = {}
     query = (
         "SELECT Name,TargetGroup FROM AutoSched_Target AS T "
@@ -285,6 +286,7 @@ if __name__ == "__main__":
             "    hessobs-summary.py year 2015",
             "    hessobs-summary.py period P2015-02",
             "    hessobs-summary.py runs 102695 104843",
+            "    hessobs-summary.py night 2022-06-10",
         ]
     )
     parser.formatter_class = argparse.RawDescriptionHelpFormatter
@@ -295,7 +297,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "command",
         metavar="COMMAND",
-        help="runs <first> <last>, period <name>, year <year>",
+        help="runs <first> <last>, period <name>, year <year>, night <UTC date>",
     )
     parser.add_argument("params", metavar="PARAM", nargs="*")
     parser.add_argument(
@@ -320,8 +322,11 @@ if __name__ == "__main__":
     elif args.command == "year":
         year = int(args.params.pop(0))
         firstrun, lastrun = hessdb.get_run_range_for_year(year)
+    elif args.command == "night":
+        date = t.Time(args.params.pop(0))
+        firstrun, lastrun = hessdb.get_run_range_for_dates(date.datetime, date.datetime)
     else:
-        parser.error("Please specify run range or period name")
+        parser.error("Please specify run, period, year, or night")
 
     # ============================================================
     # Gather the list of ObservationRuns:
