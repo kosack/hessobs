@@ -26,6 +26,7 @@ import pandas as pd
 from astropy import coordinates as c
 from astropy import units as u
 from astropy import time as t
+from astropy.table import Table
 from hessobs import hessdb
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
@@ -207,13 +208,16 @@ def get_observation_run_info(firstrun, lastrun):
     LEFT JOIN Run_End as E ON S.RunNumber=E.RunNumber
     WHERE S.RunNumber>={0:d}
       AND S.RunNumber<={1:d}
-      AND S.RunType LIKE '%ObservationRun';
+      AND S.RunType LIKE '%ObservationRun'
+    ORDER BY E.TimeOfStart;
     """
     oresults = hessdb.execute(query.format(firstrun, lastrun), "hess", "HESS_History")
     runs = []
     duration = dict()
+    date_by_run = {}
     startdate = None
     enddate = None
+    startdate_array = []
     for oresult in oresults:
         if oresult["TimeOfStart"] is None:
             continue
@@ -227,10 +231,11 @@ def get_observation_run_info(firstrun, lastrun):
         dur = (oresult["TimeOfEnd"] - oresult["TimeOfStart"]).seconds / 60.0
         if dur > MIN_DURATION:
             runs.append(oresult["RunNumber"])
+            date_by_run[oresult["RunNumber"]] = oresult["TimeOfStart"]
             duration[oresult["RunNumber"]] = dur
 
     lastrun = oresult["RunNumber"]
-    return runs, duration, startdate, enddate, lastrun
+    return runs, duration, startdate, enddate, lastrun, date_by_run
 
 
 def _reformat_radec(runinfo, run):
@@ -297,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "command",
         metavar="COMMAND",
-        help="runs <first> <last>, period <name>, year <year>, night <UTC date>",
+        help="runs <first> <last>, period <name>, year <year>, night <UTC date",
     )
     parser.add_argument("params", metavar="PARAM", nargs="*")
     parser.add_argument(
@@ -334,7 +339,9 @@ if __name__ == "__main__":
 
     logger.info("Gathering runlist...")
 
-    runs, duration, start, end, lastrun = get_observation_run_info(firstrun, lastrun)
+    runs, duration, start, end, lastrun, date_by_run = get_observation_run_info(
+        firstrun, lastrun
+    )
     logger.info(
         "  * {0} ObservationRuns found in range {1}-{2}".format(
             len(runs), firstrun, lastrun
@@ -398,10 +405,7 @@ if __name__ == "__main__":
         else:
             tels = _get_subarray_group_name(runinfo[run]["DAQ_TelescopeList"])
 
-        if "Drive_Target_Name" in runinfo[run]:
-            targ = runinfo[run]["Drive_Target_Name"]
-        else:
-            targ = "Unknown"
+        targ = runinfo[run].get("Drive_Target_Name", "Unknown")
 
         runinfo[run]["MODE"] = "Charge"
         offs = 0
@@ -413,6 +417,15 @@ if __name__ == "__main__":
         # drift scans have fixed alt
         if "Drive_Target_FixedAlt" in runinfo[run]:
             runinfo[run]["MODE"] = "Drift"
+
+        # attach also the date of the run. The night is computed by subtracting
+        # 6 hours so objects taken after midnight are still part of the
+        # previous night
+        runinfo[run]["StartTime"] = date_by_run[run]
+        starttime = t.Time(date_by_run[run])
+        runinfo[run]["Night"] = (
+            (starttime - t.TimeDelta(6 * u.h)).to_datetime().strftime("%Y-%m-%d")
+        )
 
         try:
             _reformat_radec(runinfo, run)
@@ -428,7 +441,15 @@ if __name__ == "__main__":
     # Use Pandas to manipulate the resulting data
     # ======================================================================
 
-    logger.info("Building DataFrame...")
+    logger.info("Building DataFrames...")
+
+    run_info_df = pd.DataFrame(runinfo).T
+    targets_by_date = (
+        run_info_df[["Night", "Drive_Target_Name"]]
+        .groupby("Night")
+        .agg(lambda x: ", ".join(list(set(x))))
+    )
+
     fmt = lambda x: "{0:3.1f}".format(x) if pd.notnull(x) else "-"
     webfmt = lambda x: "{0:3.1f}".format(x) if pd.notnull(x) else ""
 
@@ -533,6 +554,12 @@ if __name__ == "__main__":
         summary.T.to_html(outfile, float_format=webfmt)
         outfile.write("</body>\n")
         logger.info("WROTE summary.html")
+
+    # write out the target summary per date to a HTML table with search capability:
+
+    Table.from_pandas(targets_by_date, index=True).write(
+        "{}targets_by_date.html".format(args.tag), format="jsviewer", overwrite=True
+    )
 
     # ============================================================
     # Make an all-sky plot?
