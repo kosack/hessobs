@@ -33,7 +33,7 @@ def get_dbstring_from_config():
     """
     """
     rc = read_dbtoolsrc("proposals")
-    return "mysql+pymysql://{user}:{password}@{host}:{port}/{db}".format(
+    return "mysql+pymysql://{user}:{password}@{host}:{port}/{db}?charset=utf8".format(
         user=rc["user"],
         password=rc["password"],
         host=rc["host"],
