@@ -307,4 +307,4 @@ if __name__ == "__main__":
 
     if opts.write or opts.upload:
         upload_pdf(pdffile, year, seqno, revision)
-        os.system("python verify.py {0}-{1}-{2}".format(year, seqno, revision))
+        os.system("python hessobs-verifyprop.py {0}-{1}-{2}".format(year, seqno, revision))
